@@ -12,3 +12,30 @@ Phase 1 enthält nur die Planung:
 - [Nachweisplan C1, D1 und E1](docs/evidence-plan.md)
 
 Anwendungscode, Tests, GitHub Actions und Azure-Ressourcen folgen.
+
+## Lokal starten
+
+Voraussetzungen: Python 3.11 oder neuer und PowerShell.
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+Copy-Item .env.example .env
+flask --app statuswatch:create_app run
+```
+
+Vor dem Start muss `SECRET_KEY` in der lokalen `.env` durch einen zufälligen Wert ersetzt werden. Die Datei `.env` wird nicht versioniert.
+
+Die laufende Anwendung lässt sich lokal prüfen:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:5000/health
+```
+
+Erwartete Antwort:
+
+```json
+{"status":"ok"}
+```
