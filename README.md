@@ -39,3 +39,13 @@ Erwartete Antwort:
 ```json
 {"status":"ok"}
 ```
+
+## Tests und Qualitätskontrolle
+
+Die Entwicklungsabhängigkeiten und lokalen Prüfungen werden so ausgeführt:
+
+```powershell
+python -m pip install -r requirements-dev.txt
+python -m pytest
+python -m ruff check .
+```
