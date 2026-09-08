@@ -11,4 +11,4 @@ Phase 1 enthält nur die Planung:
 - [Sicherheit](docs/security.md)
 - [Nachweisplan C1, D1 und E1](docs/evidence-plan.md)
 
-Anwendungscode, Tests, GitHub Actions und Azure-Ressourcen folgen in späteren Phasen.
+Anwendungscode, Tests, GitHub Actions und Azure-Ressourcen folgen.
