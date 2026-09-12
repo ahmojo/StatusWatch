@@ -24,10 +24,17 @@ Ich verwende eine Flask Application Factory mit Einstellungen für Test, lokal u
 
 | Tabelle | Felder | Regeln |
 |---|---|---|
-| `monitor_targets` | ID, Name, URL, normalisierte URL, aktiv, Zeitstempel | URL eindeutig, höchstens zehn Ziele |
-| `check_results` | ID, Ziel-ID, Prüfzeit, Fälligkeit, Zustand, Statuscode, Antwortzeit, Fehlercode | Cascade beim Löschen; Zustand `up` oder `down` |
+| `monitors` | ID, Name, URL, Aktivstatus, Intervall, Erstellungs- und Änderungszeit | URL eindeutig, Name 1–80 Zeichen, Intervall mindestens 60 Sekunden |
+| `check_results` | ID, Monitor-ID, Prüfzeit, Statuscode, Antwortzeit, Erfolg, Fehlerkategorie | Cascade beim Löschen; Fehlerkategorie bei erfolgloser Prüfung erforderlich |
 
-Ein Index auf Ziel-ID und Prüfzeit beschleunigt die Historie. Ein eindeutiger Schlüssel aus Ziel-ID und Fälligkeit verhindert doppelte Scheduler-Einträge. Manuelle Prüfungen haben keine Fälligkeit.
+Ein Index auf Monitor-ID und Prüfzeit beschleunigt die Historie. PostgreSQL wird
+über `DATABASE_URL` konfiguriert. Tests erhalten jeweils eine neue
+SQLite-In-Memory-Datenbank. `flask --app statuswatch:create_app init-db` erzeugt
+das Schema reproduzierbar. Der Schutz vor doppelten Scheduler-Einträgen folgt
+mit der Scheduler-Umsetzung.
+
+Prüfergebnisse werden unbegrenzt aufbewahrt. Beim Löschen eines Monitors löscht
+die Fremdschlüsselbeziehung seine Ergebnisse mit.
 
 ## Scheduler
 

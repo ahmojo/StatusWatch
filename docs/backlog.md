@@ -8,7 +8,7 @@ Diese kleinen GitHub-Issues sind geplant, aber noch nicht auf GitHub angelegt.
 | SW-02 | Flask-Grundstruktur und Datenbankschema erstellen | 1.00 | SW-01 | App Factory, Migration und Health-Endpunkte getestet |
 | SW-03 | Betreiber-Anmeldung umsetzen | 0.75 | SW-02 | US-01 und CSRF-Schutz getestet |
 | SW-04 | Ziele verwalten | 1.00 | SW-02, SW-03 | US-02 erfüllt |
-| SW-05 | SSRF-Schutz umsetzen | 1.00 | SW-02 | Pflichtfälle aus `security.md` getestet |
+| SW-05 | SSRF-Schutz umsetzen | 1.00 | SW-02 | erlaubte und abgelehnte Zieladressen getestet |
 | SW-06 | HTTP-Prüfung und Speicherung umsetzen | 1.00 | SW-04, SW-05 | US-04 erfüllt, kein Antwortkörper gespeichert |
 | SW-07 | Fünf-Minuten-Scheduler umsetzen | 0.75 | SW-06 | US-03 erfüllt, Doppellauf verhindert |
 | SW-08 | Status und Verlauf anzeigen | 0.75 | SW-06 | US-05 erfüllt, ohne JavaScript nutzbar |
