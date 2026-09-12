@@ -21,3 +21,19 @@ HTTP 200–399 gilt als erreichbar. HTTP 400–599 und technische Fehler gelten 
 ## D-005: Azure
 
 Ich habe Docker auf Azure App Service, Azure Database for PostgreSQL und GitHub Actions mit OIDC gewählt. Diese Lösung zeigt Container, Artefakte und Deployment, ohne eine Container-Orchestrierung einzuführen.
+
+## D-006: Aufbewahrung der Prüfergebnisse
+
+Bestätigt am 12. September 2026.
+
+Ich bewahre Prüfergebnisse unbegrenzt auf. Die Korrektur durch den Lehrer kann
+später erfolgen, und eine längere Historie ist für das Testen aussagekräftiger.
+Eine automatische Bereinigung gehört deshalb nicht zum MVP.
+
+## D-007: Löschen eines Monitors
+
+Bestätigt am 12. September 2026.
+
+Beim Löschen eines Monitors werden die zugehörigen Prüfergebnisse per Cascade
+mitgelöscht. Ich habe dieses Verhalten gewählt, um die Datenhaltung einfach zu
+halten und keine Ergebnisse ohne Monitor zu behalten.
