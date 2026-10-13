@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Monitore – StatusWatch</title>
+</head>
+<body>
+  <h1>Monitore</h1>
+  <form method="post" action="{{ url_for('auth.logout') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <button type="submit">Abmelden</button>
+  </form>
+  {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+  <h2>Monitor erstellen</h2>
+  <form method="post" action="{{ url_for('monitors.index') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="name">Name</label>
+    <input id="name" name="name" value="{{ name }}" minlength="1" maxlength="80" required>
+    <label for="url">URL</label>
+    <input id="url" name="url" type="url" value="{{ url }}" maxlength="2048" required>
+    <button type="submit">Erstellen</button>
+  </form>
+  <h2>Vorhandene Monitore</h2>
+  <ul>
+    {% for monitor in monitors %}
+    <li>
+      {{ monitor.name }} – {{ monitor.url }}
+      <form method="post" action="{{ url_for('monitors.delete', monitor_id=monitor.id) }}">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <button type="submit">Löschen</button>
+      </form>
+    </li>
+    {% else %}
+    <li>Es sind noch keine Monitore vorhanden.</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
