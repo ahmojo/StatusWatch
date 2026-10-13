@@ -15,6 +15,7 @@ def test_health_endpoint() -> None:
 def test_configuration_uses_environment(monkeypatch) -> None:
     monkeypatch.setenv("APP_ENV", "test-environment")
     monkeypatch.setenv("SECRET_KEY", "test-secret")
+    monkeypatch.setenv("OPERATOR_PASSWORD", "test-password")
     monkeypatch.setenv(
         "DATABASE_URL", "postgresql+psycopg://statuswatch@database/statuswatch"
     )
@@ -23,6 +24,7 @@ def test_configuration_uses_environment(monkeypatch) -> None:
 
     assert app.config["APP_ENV"] == "test-environment"
     assert app.config["SECRET_KEY"] == "test-secret"
+    assert app.config["OPERATOR_PASSWORD"] == "test-password"
     assert (
         app.config["SQLALCHEMY_DATABASE_URI"]
         == "postgresql+psycopg://statuswatch@database/statuswatch"
