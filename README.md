@@ -10,8 +10,9 @@ Die Planungsunterlagen liegen unter `docs`:
 - [Architektur](docs/architecture.md)
 - [Nachweisplan C1, D1 und E1](docs/evidence-plan.md)
 
-Flask-Grundgerüst, Datenbankmodelle, Tests und PR-Prüfungen sind umgesetzt.
-Oberfläche, Monitoring, Docker und Azure folgen in späteren Phasen.
+Flask-Grundgerüst, Datenbankmodelle, Anmeldung, Monitorverwaltung, Tests und
+PR-Prüfungen sind umgesetzt. HTTP-Prüfungen, Statusanzeige, Docker und Azure
+sind noch nicht umgesetzt.
 
 ## Lokal starten
 
@@ -25,7 +26,10 @@ python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Vor dem Start muss `SECRET_KEY` in der lokalen `.env` durch einen zufälligen Wert ersetzt werden. Die Datei `.env` wird nicht versioniert.
+Vor dem Start muss `SECRET_KEY` in der lokalen `.env` durch einen zufälligen Wert
+ersetzt und `OPERATOR_PASSWORD` mit einem eigenen Passwort gesetzt werden.
+Ohne diese Werte ist die Anmeldung nicht verfügbar. Die Datei `.env` wird nicht
+versioniert.
 `DATABASE_URL` muss auf die lokale PostgreSQL-Datenbank zeigen. Danach werden die
 Tabellen reproduzierbar initialisiert und die Anwendung gestartet:
 
@@ -45,6 +49,24 @@ Erwartete Antwort:
 ```json
 {"status":"ok"}
 ```
+
+## Anmeldung und Monitorverwaltung
+
+Unter `http://127.0.0.1:5000/` melde ich mich mit dem Betreiberpasswort an.
+Ein Passwort reicht, weil ich keine Benutzerverwaltung benötige. Die
+Flask-Session speichert die Anmeldung. Abmelden leert die Session.
+Die Verwaltung verlangt eine Anmeldung. Flask-WTF prüft den CSRF-Token
+bei jedem Formularversand.
+
+Nach der Anmeldung kann ich bis zu zehn Monitore anzeigen, erstellen und
+löschen. Namen müssen 1–80 Zeichen lang sein. URLs müssen HTTP oder HTTPS
+verwenden. Nur Ports 80 und 443 sind erlaubt. Gleiche URLs werden nach der
+Vereinheitlichung abgelehnt. Beim Löschen werden zugehörige Prüfergebnisse
+mitgelöscht.
+
+Die Tests prüfen Anmeldung, Zugriffsschutz, CSRF und Monitorverwaltung mit
+SQLite. Dabei sind Netzwerkzugriffe gesperrt. Die Verwaltung prüft keine
+Websites. PostgreSQL und Deployment habe ich für diese Änderung nicht geprüft.
 
 ## Tests und Qualitätskontrolle
 

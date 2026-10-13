@@ -16,6 +16,8 @@ def app() -> Generator[Flask]:
     application = create_app(
         {
             "TESTING": True,
+            "SECRET_KEY": "test-secret",
+            "OPERATOR_PASSWORD": "test-password",
             "SQLALCHEMY_DATABASE_URI": "sqlite:///:memory:",
         }
     )
