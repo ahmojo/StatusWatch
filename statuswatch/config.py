@@ -8,6 +8,8 @@ def load_config() -> dict[str, object]:
     return {
         "APP_ENV": os.getenv("APP_ENV", "development"),
         "SECRET_KEY": os.getenv("SECRET_KEY"),
+        "OPERATOR_PASSWORD": os.getenv("OPERATOR_PASSWORD"),
+        "SESSION_COOKIE_SAMESITE": "Lax",
         "SQLALCHEMY_DATABASE_URI": os.getenv(
             "DATABASE_URL",
             "postgresql+psycopg://statuswatch@localhost:5432/statuswatch",
