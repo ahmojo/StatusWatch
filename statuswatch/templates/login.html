@@ -1,0 +1,17 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>Anmeldung – StatusWatch</title>
+</head>
+<body>
+  <h1>StatusWatch: Anmeldung</h1>
+  {% if error %}<p role="alert">{{ error }}</p>{% endif %}
+  <form method="post" action="{{ url_for('auth.login') }}">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="password">Betreiberpasswort</label>
+    <input id="password" name="password" type="password" autocomplete="current-password" required>
+    <button type="submit">Anmelden</button>
+  </form>
+</body>
+</html>
