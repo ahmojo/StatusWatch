@@ -5,7 +5,7 @@ StatusWatch ist mein Projekt für Modul 324. Die Anwendung soll bis zu zehn öff
 Die [Dokumentation zu C1, D1 und E1](docs/documentation.md) liegt unter `docs`.
 
 Flask-Grundgerüst, Datenbankmodelle, Anmeldung, Monitorverwaltung, Tests und
-PR-Prüfungen und eine synchrone HTTP-Prüffunktion sind umgesetzt. Statusanzeige, Docker und Azure
+PR-Prüfungen, eine synchrone HTTP-Prüffunktion und die Ergebnisanzeige sind umgesetzt. Docker und Azure
 sind noch nicht umgesetzt.
 
 ## Lokal starten
@@ -59,8 +59,16 @@ Vereinheitlichung abgelehnt. Beim Löschen werden zugehörige Prüfergebnisse
 mitgelöscht.
 
 Die Tests prüfen Anmeldung, Zugriffsschutz, CSRF und Monitorverwaltung mit
-SQLite. Dabei sind Netzwerkzugriffe gesperrt. Die Verwaltung prüft keine
-Websites. PostgreSQL und Deployment habe ich für diese Änderung nicht geprüft.
+SQLite. Netzwerkzugriffe werden in Tests gesperrt oder ersetzt.
+PostgreSQL und Deployment habe ich für diese Änderung nicht geprüft.
+
+Die Übersicht zeigt pro Monitor den letzten Zustand, die Prüfzeit in UTC und die
+Antwortzeit in Millisekunden. Ohne Ergebnis erscheint «Noch nicht geprüft».
+Ein Klick auf den Namen öffnet höchstens zehn Ergebnisse, neuestes zuerst.
+Mit «Jetzt prüfen» starte ich dort den vorhandenen synchronen Prüfer.
+Nach der Prüfung wird die Detailseite mit dem neuen Ergebnis angezeigt.
+Pro Monitor gelten 30 Sekunden Pause ab der letzten Prüfzeit, auch nach Fehlern.
+Während der Pause startet keine neue Prüfung; die Seite zeigt einen Hinweis.
 
 ## Tests und Qualitätskontrolle
 
@@ -71,8 +79,8 @@ IP-Adressen öffentlich sind. Der Socket-Timeout beträgt fünf Sekunden.
 Weiterleitungen und Wiederholungen werden nicht ausgeführt; der Antwortkörper
 wird nicht gelesen. Statuscodes 200–399 gelten als erfolgreich.
 Fehler werden nur als `invalid_url`, `blocked_address`, `dns`, `timeout`, `tls`,
-`connection` oder `http_status` gespeichert. Es gibt noch keinen Aufruf über die
-Oberfläche oder einen Scheduler.
+`connection` oder `http_status` gespeichert und in der Oberfläche mit einer
+kurzen Fehlermeldung angezeigt. Eine automatische Prüfung gibt es noch nicht.
 
 Die Entwicklungsabhängigkeiten und lokalen Prüfungen werden so ausgeführt:
 

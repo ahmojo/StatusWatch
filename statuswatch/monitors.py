@@ -1,9 +1,9 @@
 import re
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from ipaddress import IPv6Address
 from urllib.parse import urlsplit, urlunsplit
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
@@ -117,6 +117,32 @@ def detail(monitor_id: int):
         .limit(10)
     ).all()
     return render_template("monitor_detail.html", monitor=monitor, results=results)
+
+
+@monitors_blueprint.post("/monitors/<int:monitor_id>/check")
+@login_required
+def check(monitor_id: int):
+    from statuswatch.checks import check_monitor
+
+    # PostgreSQL serializes checks for this monitor until the checker commits.
+    monitor = db.one_or_404(
+        select(Monitor).where(Monitor.id == monitor_id).with_for_update()
+    )
+    latest = db.session.scalar(
+        select(CheckResult)
+        .where(CheckResult.monitor_id == monitor.id)
+        .order_by(CheckResult.checked_at.desc(), CheckResult.id.desc())
+        .limit(1)
+    )
+    if latest is not None:
+        checked_at = latest.checked_at
+        if checked_at.tzinfo is None:
+            checked_at = checked_at.replace(tzinfo=UTC)
+        if datetime.now(UTC) < checked_at + timedelta(seconds=30):
+            flash("Bitte zwischen zwei Prüfungen 30 Sekunden warten.")
+            return redirect(url_for("monitors.detail", monitor_id=monitor.id))
+    check_monitor(monitor)
+    return redirect(url_for("monitors.detail", monitor_id=monitor.id))
 
 
 @monitors_blueprint.post("/monitors/<int:monitor_id>/delete")
