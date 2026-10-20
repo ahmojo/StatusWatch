@@ -1,0 +1,21 @@
+{% from 'result.html' import show_result %}
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8">
+  <title>{{ monitor.name }} – StatusWatch</title>
+</head>
+<body>
+  <p><a href="{{ url_for('monitors.index') }}">Zur Monitorübersicht</a></p>
+  <h1>{{ monitor.name }}</h1>
+  <p>{{ monitor.url }}</p>
+  <h2>Letzte Ergebnisse (höchstens zehn)</h2>
+  <ol>
+    {% for result in results %}
+    <li>{{ show_result(result) }}</li>
+    {% else %}
+    <li>Noch nicht geprüft</li>
+    {% endfor %}
+  </ol>
+</body>
+</html>

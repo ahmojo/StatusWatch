@@ -1,3 +1,4 @@
+{% from 'result.html' import show_result %}
 <!doctype html>
 <html lang="de">
 <head>
@@ -24,7 +25,8 @@
   <ul>
     {% for monitor in monitors %}
     <li>
-      {{ monitor.name }} – {{ monitor.url }}
+      <a href="{{ url_for('monitors.detail', monitor_id=monitor.id) }}">{{ monitor.name }}</a> – {{ monitor.url }}
+      {{ show_result(latest_results[monitor.id]) }}
       <form method="post" action="{{ url_for('monitors.delete', monitor_id=monitor.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <button type="submit">Löschen</button>

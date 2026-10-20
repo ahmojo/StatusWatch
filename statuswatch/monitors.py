@@ -1,4 +1,5 @@
 import re
+from datetime import UTC, datetime
 from ipaddress import IPv6Address
 from urllib.parse import urlsplit, urlunsplit
 
@@ -8,9 +9,17 @@ from sqlalchemy.exc import IntegrityError
 
 from statuswatch.auth import login_required
 from statuswatch.database import db
-from statuswatch.models import Monitor
+from statuswatch.models import CheckResult, Monitor
 
 monitors_blueprint = Blueprint("monitors", __name__)
+
+
+@monitors_blueprint.app_template_filter("utc_time")
+def utc_time(value: datetime) -> str:
+    # SQLite returns naive timestamps; stored check times are UTC.
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 def normalize_url(value: str) -> str:
@@ -82,9 +91,32 @@ def index():
                         return redirect(url_for("monitors.index"))
 
     monitors = db.session.scalars(select(Monitor).order_by(Monitor.id)).all()
+    latest_results = {
+        monitor.id: db.session.scalar(
+            select(CheckResult)
+            .where(CheckResult.monitor_id == monitor.id)
+            .order_by(CheckResult.checked_at.desc(), CheckResult.id.desc())
+            .limit(1)
+        )
+        for monitor in monitors
+    }
     return render_template(
-        "monitors.html", monitors=monitors, error=error, name=name, url=url
+        "monitors.html", monitors=monitors, latest_results=latest_results,
+        error=error, name=name, url=url
     ), 400 if error else 200
+
+
+@monitors_blueprint.get("/monitors/<int:monitor_id>")
+@login_required
+def detail(monitor_id: int):
+    monitor = db.get_or_404(Monitor, monitor_id)
+    results = db.session.scalars(
+        select(CheckResult)
+        .where(CheckResult.monitor_id == monitor.id)
+        .order_by(CheckResult.checked_at.desc(), CheckResult.id.desc())
+        .limit(10)
+    ).all()
+    return render_template("monitor_detail.html", monitor=monitor, results=results)
 
 
 @monitors_blueprint.post("/monitors/<int:monitor_id>/delete")
