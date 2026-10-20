@@ -20,10 +20,15 @@ GitHub Actions soll bei Pull Requests pytest und Ruff ausführen. Die Tests
 prüfen unter anderem Anmeldung, Zugriffsschutz und Monitorverwaltung.
 Lokal habe ich mit Python 3.14 und SQLite geprüft:
 
-- `.venv\Scripts\python.exe -m pytest`: 61 Tests bestanden.
+- `.venv\Scripts\python.exe -m pytest`: 102 Tests bestanden.
 - `.venv\Scripts\python.exe -m ruff check .`: keine Fehler.
 
-Der [CI-Lauf zu PR #8](https://github.com/ahmojo/StatusWatch/actions/runs/38454026215)
+Für den synchronen HTTP-Prüfer habe ich
+[Issue #9](https://github.com/ahmojo/StatusWatch/issues/9) erstellt.
+Die Tests ersetzen DNS und Verbindungen und prüfen Adressschutz,
+HTTP-Statuscodes, technische Fehler und die Speicherung ohne Antwortkörper.
+
+Der [CI-Lauf zu PR #8](https://github.com/ahmojo/StatusWatch/actions/runs/38459979902)
 wurde wegen einer Zahlungs- oder Ausgabenlimit-Sperre nicht gestartet.
 Ein erfolgreicher CI-Nachweis fehlt deshalb noch.
 

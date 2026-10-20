@@ -5,7 +5,7 @@ StatusWatch ist mein Projekt für Modul 324. Die Anwendung soll bis zu zehn öff
 Die [Dokumentation zu C1, D1 und E1](docs/documentation.md) liegt unter `docs`.
 
 Flask-Grundgerüst, Datenbankmodelle, Anmeldung, Monitorverwaltung, Tests und
-PR-Prüfungen sind umgesetzt. HTTP-Prüfungen, Statusanzeige, Docker und Azure
+PR-Prüfungen und eine synchrone HTTP-Prüffunktion sind umgesetzt. Statusanzeige, Docker und Azure
 sind noch nicht umgesetzt.
 
 ## Lokal starten
@@ -63,6 +63,16 @@ SQLite. Dabei sind Netzwerkzugriffe gesperrt. Die Verwaltung prüft keine
 Websites. PostgreSQL und Deployment habe ich für diese Änderung nicht geprüft.
 
 ## Tests und Qualitätskontrolle
+
+`statuswatch.checks.check_monitor(monitor)` prüft einen gespeicherten Monitor und
+speichert ein `CheckResult`. Die Funktion benötigt einen Flask-Anwendungskontext.
+Sie erlaubt HTTP/HTTPS auf Ports 80/443 und verbindet erst, wenn alle aufgelösten
+IP-Adressen öffentlich sind. Der Socket-Timeout beträgt fünf Sekunden.
+Weiterleitungen und Wiederholungen werden nicht ausgeführt; der Antwortkörper
+wird nicht gelesen. Statuscodes 200–399 gelten als erfolgreich.
+Fehler werden nur als `invalid_url`, `blocked_address`, `dns`, `timeout`, `tls`,
+`connection` oder `http_status` gespeichert. Es gibt noch keinen Aufruf über die
+Oberfläche oder einen Scheduler.
 
 Die Entwicklungsabhängigkeiten und lokalen Prüfungen werden so ausgeführt:
 
