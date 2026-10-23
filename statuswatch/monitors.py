@@ -1,16 +1,25 @@
 import re
+from datetime import UTC, datetime, timedelta
 from ipaddress import IPv6Address
 from urllib.parse import urlsplit, urlunsplit
 
-from flask import Blueprint, redirect, render_template, request, url_for
+from flask import Blueprint, flash, redirect, render_template, request, url_for
 from sqlalchemy import func, select
 from sqlalchemy.exc import IntegrityError
 
 from statuswatch.auth import login_required
 from statuswatch.database import db
-from statuswatch.models import Monitor
+from statuswatch.models import CheckResult, Monitor
 
 monitors_blueprint = Blueprint("monitors", __name__)
+
+
+@monitors_blueprint.app_template_filter("utc_time")
+def utc_time(value: datetime) -> str:
+    # SQLite returns naive timestamps; stored check times are UTC.
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
 
 
 def normalize_url(value: str) -> str:
@@ -82,9 +91,58 @@ def index():
                         return redirect(url_for("monitors.index"))
 
     monitors = db.session.scalars(select(Monitor).order_by(Monitor.id)).all()
+    latest_results = {
+        monitor.id: db.session.scalar(
+            select(CheckResult)
+            .where(CheckResult.monitor_id == monitor.id)
+            .order_by(CheckResult.checked_at.desc(), CheckResult.id.desc())
+            .limit(1)
+        )
+        for monitor in monitors
+    }
     return render_template(
-        "monitors.html", monitors=monitors, error=error, name=name, url=url
+        "monitors.html", monitors=monitors, latest_results=latest_results,
+        error=error, name=name, url=url
     ), 400 if error else 200
+
+
+@monitors_blueprint.get("/monitors/<int:monitor_id>")
+@login_required
+def detail(monitor_id: int):
+    monitor = db.get_or_404(Monitor, monitor_id)
+    results = db.session.scalars(
+        select(CheckResult)
+        .where(CheckResult.monitor_id == monitor.id)
+        .order_by(CheckResult.checked_at.desc(), CheckResult.id.desc())
+        .limit(10)
+    ).all()
+    return render_template("monitor_detail.html", monitor=monitor, results=results)
+
+
+@monitors_blueprint.post("/monitors/<int:monitor_id>/check")
+@login_required
+def check(monitor_id: int):
+    from statuswatch.checks import check_monitor
+
+    # PostgreSQL serializes checks for this monitor until the checker commits.
+    monitor = db.one_or_404(
+        select(Monitor).where(Monitor.id == monitor_id).with_for_update()
+    )
+    latest = db.session.scalar(
+        select(CheckResult)
+        .where(CheckResult.monitor_id == monitor.id)
+        .order_by(CheckResult.checked_at.desc(), CheckResult.id.desc())
+        .limit(1)
+    )
+    if latest is not None:
+        checked_at = latest.checked_at
+        if checked_at.tzinfo is None:
+            checked_at = checked_at.replace(tzinfo=UTC)
+        if datetime.now(UTC) < checked_at + timedelta(seconds=30):
+            flash("Bitte zwischen zwei Prüfungen 30 Sekunden warten.")
+            return redirect(url_for("monitors.detail", monitor_id=monitor.id))
+    check_monitor(monitor)
+    return redirect(url_for("monitors.detail", monitor_id=monitor.id))
 
 
 @monitors_blueprint.post("/monitors/<int:monitor_id>/delete")

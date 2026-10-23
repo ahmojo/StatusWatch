@@ -1,0 +1,25 @@
+{% macro show_result(result) %}
+<dl>
+  <dt>Zustand</dt>
+  <dd>{% if not result %}Noch nicht geprüft{% elif result.success %}Erreichbar{% else %}Nicht erreichbar{% endif %}</dd>
+  <dt>Prüfzeit</dt>
+  <dd>{{ result.checked_at|utc_time if result else '–' }}</dd>
+  <dt>Antwortzeit</dt>
+  <dd>{% if result and result.response_time_ms is not none %}{{ result.response_time_ms }} ms{% else %}–{% endif %}</dd>
+  {% if result and result.status_code is not none %}
+  <dt>HTTP-Status</dt><dd>{{ result.status_code }}</dd>
+  {% endif %}
+  {% if result and result.error_category %}
+  <dt>Fehler</dt>
+  <dd>{{ {
+    'invalid_url': 'Die Zieladresse ist ungültig.',
+    'blocked_address': 'Die Zieladresse ist nicht öffentlich und wird nicht geprüft.',
+    'dns': 'Der Hostname konnte nicht aufgelöst werden.',
+    'timeout': 'Das Ziel hat nicht rechtzeitig geantwortet.',
+    'tls': 'Die verschlüsselte Verbindung ist fehlgeschlagen.',
+    'connection': 'Die Verbindung zum Ziel ist fehlgeschlagen.',
+    'http_status': 'Das Ziel hat einen HTTP-Fehler gemeldet.'
+  }.get(result.error_category, 'Die Prüfung ist fehlgeschlagen.') }}</dd>
+  {% endif %}
+</dl>
+{% endmacro %}
