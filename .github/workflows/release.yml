@@ -43,6 +43,7 @@ jobs:
         run: |
           IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
           docker build --platform linux/amd64 --provenance=false --sbom=false \
+            --build-arg "SOURCE_COMMIT=$GITHUB_SHA" \
             --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
             --tag "$IMAGE:$VERSION" --tag "$IMAGE:sha-$GITHUB_SHA" .
           printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
