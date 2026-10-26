@@ -1,7 +1,7 @@
 {% macro show_result(result) %}
-<dl>
+<dl class="result">
   <dt>Zustand</dt>
-  <dd>{% if not result %}Noch nicht geprüft{% elif result.success %}Erreichbar{% else %}Nicht erreichbar{% endif %}</dd>
+  <dd><span class="state{% if result %} {{ 'ok' if result.success else 'failed' }}{% endif %}">{% if not result %}Noch nicht geprüft{% elif result.success %}Erreichbar{% else %}Nicht erreichbar{% endif %}</span></dd>
   <dt>Prüfzeit</dt>
   <dd>{{ result.checked_at|utc_time if result else '–' }}</dd>
   <dt>Antwortzeit</dt>

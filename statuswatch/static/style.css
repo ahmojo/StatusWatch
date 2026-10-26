@@ -1,0 +1,73 @@
+:root {
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: #182639;
+  background: #f3f6fa;
+  line-height: 1.5;
+  font-size: 16px;
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: #1756b4; text-underline-offset: 3px; }
+h1, h2, h3 { line-height: 1.2; overflow-wrap: anywhere; }
+h1 { font-size: 1.8rem; margin: 0 0 1.5rem; }
+h2 { font-size: 1.2rem; margin: 2rem 0 1rem; }
+h3 { font-size: 1.15rem; margin: 0; }
+p { margin: 0 0 1rem; }
+.site-header {
+  padding: 1rem max(1rem, calc((100% - 68rem) / 2));
+  background: #fff;
+  border-bottom: 1px solid #dce3ec;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+.brand { font-size: 1.15rem; font-weight: 750; text-decoration: none; color: #182639; }
+.site-header span, .hint { color: #526277; font-size: .9rem; }
+main { width: min(100%, 70rem); margin: 0 auto; padding: 1.5rem 1rem 3rem; }
+.panel, .monitor-card, .history > li {
+  background: #fff;
+  border: 1px solid #dce3ec;
+  border-radius: 12px;
+  padding: 1.25rem;
+  min-width: 0;
+}
+.panel > h2:first-child { margin-top: 0; }
+.login-panel { max-width: 27rem; margin: 5vh auto 0; }
+.login-panel h1 { font-size: 1.55rem; margin-bottom: .5rem; }
+.login-panel form { margin-top: 1.5rem; }
+.toolbar { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: 1.5rem; }
+.toolbar h1 { margin: 0; }
+.toolbar button { width: auto; }
+.field { min-width: 0; margin-bottom: 1rem; }
+label { display: block; font-weight: 600; margin-bottom: .4rem; }
+input, button { font: inherit; min-height: 46px; border-radius: 7px; width: 100%; }
+input { border: 1px solid #9caec3; padding: .65rem .75rem; background: #fff; color: #182639; }
+button { border: 1px solid #1756b4; background: #1756b4; color: #fff; padding: .65rem 1rem; font-weight: 600; cursor: pointer; }
+button:hover { background: #10438f; }
+button.secondary { background: #fff; color: #1756b4; border-color: #b5c6dd; }
+button.secondary:hover { background: #edf3fc; }
+button.danger { background: #fff; color: #a2232e; border-color: #dfbac0; }
+button.danger:hover { background: #fff0f1; }
+:focus-visible { outline: 3px solid #387bda; outline-offset: 3px; }
+.notice { padding: .8rem 1rem; background: #fff4dc; border: 1px solid #ddbc72; border-radius: 7px; margin-bottom: 1rem; overflow-wrap: anywhere; }
+.monitor-list, .history { list-style: none; margin: 0; padding: 0; display: grid; gap: 1rem; }
+.monitor-list { grid-template-columns: repeat(auto-fit, minmax(min(100%, 18rem), 1fr)); }
+.monitor-url { display: block; overflow-wrap: anywhere; color: #526277; font-size: .95rem; margin: .5rem 0 1.25rem; }
+.result { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr); gap: .65rem 1rem; margin: 0; font-size: .95rem; }
+.result dt { color: #526277; }
+.result dd { margin: 0; overflow-wrap: anywhere; }
+.state { display: inline-block; border-radius: 5px; padding: .15rem .5rem; background: #edf1f6; color: #405269; font-weight: 600; }
+.state.ok { background: #e3f4e9; color: #166534; }
+.state.failed { background: #fce8e9; color: #9f1c2a; }
+.monitor-card form { margin-top: 1.25rem; }
+.back-link { display: inline-block; margin-bottom: 1.25rem; padding: .5rem 0; }
+.check-form { max-width: 20rem; margin: 1.5rem 0 .75rem; }
+.empty { color: #526277; padding: 1rem 0; }
+@media (min-width: 700px) {
+  main { padding-top: 2.5rem; }
+  .form-grid { display: grid; grid-template-columns: 1fr 2fr auto; align-items: end; gap: 1rem; }
+  .form-grid .field { margin: 0; }
+  .history { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
