@@ -14,14 +14,24 @@ und [PR #8](https://github.com/ahmojo/StatusWatch/pull/8) erstellt. Ich habe die
 Änderungen auf drei Commits verteilt, damit Anmeldung, Monitorverwaltung und
 Tests getrennt nachvollziehbar sind. Ein Container-Artefakt gibt es noch nicht.
 
+Für die lokalen Qualitätsprüfungen und die PR-/User-Story-Vorlagen habe ich
+[Issue #15](https://github.com/ahmojo/StatusWatch/issues/15) erstellt.
+
 ## D1: Automatisierter Integrationsprozess
 
-GitHub Actions soll bei Pull Requests pytest und Ruff ausführen. Die Tests
-prüfen unter anderem Anmeldung, Zugriffsschutz und Monitorverwaltung.
+GitHub Actions führt bei Pull Requests die gleichen pre-commit-Prüfungen wie
+lokal aus, einschliesslich Ruff und pytest mit mindestens 85 % Zeilenabdeckung.
+Die Tests prüfen unter anderem Anmeldung, Zugriffsschutz und Monitorverwaltung.
 Lokal habe ich mit Python 3.14 und SQLite geprüft:
 
 - `.venv\Scripts\python.exe -m pytest`: 137 Tests bestanden.
 - `.venv\Scripts\python.exe -m ruff check .`: keine Fehler.
+- `python -m pre_commit run --all-files` in der aktivierten `.venv`: bestanden.
+- Zeilenabdeckung: 98,99 %; die Mindestgrenze von 85 % ist erfüllt.
+
+Ich habe die Ablehnung von Leerzeichenfehlern, fehlendem abschliessendem
+Zeilenumbruch, Konfliktmarkern und unerwünschten Dateiendungen separat geprüft.
+Im Testaufbau werden die SQLite-Verbindungen jetzt nach jedem Test geschlossen.
 
 Für den synchronen HTTP-Prüfer habe ich
 [Issue #9](https://github.com/ahmojo/StatusWatch/issues/9) erstellt.
@@ -40,9 +50,9 @@ Ich habe Token-Schutz, aktive Monitore, Reihenfolge, Fortsetzung nach Zielfehler
 den Duplikatschutz und die Workflow-Auslöser lokal geprüft.
 Ein echter GitHub-Zeitplanlauf und die PostgreSQL-Schemaänderung sind nicht geprüft.
 
-Der [CI-Lauf zu PR #8](https://github.com/ahmojo/StatusWatch/actions/runs/38459979902)
-wurde wegen einer Zahlungs- oder Ausgabenlimit-Sperre nicht gestartet.
-Ein erfolgreicher CI-Nachweis fehlt deshalb noch.
+Der [CI-Lauf zu PR #14](https://github.com/ahmojo/StatusWatch/actions/runs/40287716816)
+hat pytest und Ruff erfolgreich ausgeführt. Die neuen pre-commit-Prüfungen
+sind bisher nur lokal ausgeführt; ein CI-Nachweis für diese Änderung fehlt noch.
 
 ## E1: Automatisierter Deploymentprozess
 

@@ -122,6 +122,24 @@ Die Entwicklungsabhängigkeiten und lokalen Prüfungen werden so ausgeführt:
 
 ```powershell
 python -m pip install -r requirements-dev.txt
+python -m pre_commit install
+python -m pre_commit run --all-files
 python -m pytest
 python -m ruff check .
 ```
+
+Die virtuelle Umgebung muss dabei aktiviert sein. pre-commit führt Ruff,
+pytest mit Coverage sowie Prüfungen auf Leerzeichen, Dateiende, Konfliktmarker,
+Dateinamen mit unterschiedlicher Gross-/Kleinschreibung und unerwünschte Endungen
+(`.pyc`, `.pyo`, `.exe`, `.dll`, `.bak`, `.tmp`, `.orig`, `.rej`) aus.
+Die einfachen Leerzeichen- und Dateiende-Hooks korrigieren betroffene Dateien;
+danach muss der Diff kontrolliert und die Änderung erneut gestaged werden.
+GitHub Actions verwendet denselben Aufruf `python -m pre_commit run --all-files`.
+
+`python -m pytest` zeigt die Zeilenabdeckung von `statuswatch` im Terminal und
+schlägt unter 85 % fehl. Bei 98,99 % gemessener Abdeckung lässt dieser Mindestwert
+Spielraum für kleine Änderungen.
+
+Die Ruff-Formatprüfung ist vorerst nicht aktiviert: `ruff format --check .`
+würde sechs bestehende Python-Dateien ändern. Diese Formatänderungen gehören
+nicht zu diesem Schritt.

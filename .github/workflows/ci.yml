@@ -25,8 +25,5 @@ jobs:
       - name: Install dependencies
         run: python -m pip install -r requirements-dev.txt
 
-      - name: Run Ruff
-        run: python -m ruff check .
-
-      - name: Run tests
-        run: python -m pytest
+      - name: Run local quality checks
+        run: python -m pre_commit run --all-files
