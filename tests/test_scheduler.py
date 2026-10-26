@@ -1,6 +1,8 @@
 import http.client
+import re
 import socket
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
 from unittest.mock import Mock
 
 import pytest
@@ -204,3 +206,18 @@ def test_browser_session_cannot_replace_scheduler_token(app, client, monitors):
     # Other forms still require CSRF protection.
     response = client.post("/", data={"name": "New", "url": "http://new.example/"})
     assert response.status_code == 400
+
+
+def test_workflow_has_five_minute_schedule_dispatch_and_shared_concurrency():
+    path = Path(__file__).parents[1] / ".github/workflows/scheduled-checks.yml"
+    workflow = path.read_text()
+    assert re.search(
+        r'^on:\n  schedule:\n    - cron: "\*/5 \* \* \* \*"\n  workflow_dispatch:',
+        workflow, re.M,
+    )
+    assert (
+        "concurrency:\n  group: statuswatch-scheduled-checks\n  cancel-in-progress: false"
+        in workflow
+    )
+    assert "${{ secrets.SCHEDULER_TOKEN }}" in workflow
+    assert '--request POST' in workflow and '/internal/checks' in workflow

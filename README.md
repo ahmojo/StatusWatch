@@ -5,8 +5,8 @@ StatusWatch ist mein Projekt für Modul 324. Die Anwendung soll bis zu zehn öff
 Die [Dokumentation zu C1, D1 und E1](docs/documentation.md) liegt unter `docs`.
 
 Flask-Grundgerüst, Datenbankmodelle, Anmeldung, Monitorverwaltung, Tests und
-PR-Prüfungen, eine synchrone HTTP-Prüffunktion und die Ergebnisanzeige sind umgesetzt. Docker und Azure
-sind noch nicht umgesetzt.
+PR-Prüfungen, synchrone HTTP-Prüfung, Ergebnisanzeige und der Aufruf durch GitHub Actions
+sind umgesetzt. Docker und Azure sind noch nicht umgesetzt.
 
 ## Lokal starten
 
@@ -70,6 +70,42 @@ Nach der Prüfung wird die Detailseite mit dem neuen Ergebnis angezeigt.
 Pro Monitor gelten 30 Sekunden Pause ab der letzten Prüfzeit, auch nach Fehlern.
 Während der Pause startet keine neue Prüfung; die Seite zeigt einen Hinweis.
 
+## Automatische Prüfung
+
+`POST /internal/checks` verlangt `Authorization: Bearer <SCHEDULER_TOKEN>`.
+Das separate Token wird in der Anwendungsumgebung als `SCHEDULER_TOKEN` gesetzt.
+Ohne Konfiguration antwortet der Endpunkt mit 503, bei falschem oder fehlendem
+Token mit 401. Er verwendet keine Anmeldung per Browser-Session und ist vom
+CSRF-Schutz ausgenommen; die übrigen Formulare behalten ihren CSRF-Schutz.
+
+Der Aufruf prüft alle aktiven Monitore nacheinander mit dem vorhandenen Prüfer.
+Zielfehler werden gespeichert und stoppen die übrigen Prüfungen nicht.
+Der UTC-Zeitpunkt beim Eingang des Aufrufs bestimmt den Fünf-Minuten-Zeitraum
+für alle Ergebnisse dieses Aufrufs. Bereits gespeicherte automatische Ergebnisse
+dieses Zeitraums werden übersprungen. `UNIQUE (monitor_id, scheduled_period)`
+verhindert doppelte Speicherung auch bei gleichzeitigen Aufrufen.
+Manuelle Ergebnisse haben `scheduled_period = NULL` und bleiben unabhängig.
+
+Für eine neue Datenbank genügt weiterhin `flask --app statuswatch:create_app init-db`.
+Bei einer bestehenden PostgreSQL-Datenbank muss vor dem Start dieser Version
+einmalig [migrations/001_scheduled_period.sql](migrations/001_scheduled_period.sql)
+ausgeführt werden. `init-db` aktualisiert vorhandene Tabellen nicht.
+
+Im GitHub-Repository unter **Settings → Secrets and variables → Actions** werden
+das Secret `SCHEDULER_TOKEN` mit demselben Wert wie in der Anwendung und die
+Variable `STATUSWATCH_URL` mit der öffentlich erreichbaren HTTPS-Basisadresse
+ohne Endpunktpfad benötigt. Tokenwerte gehören nicht ins Repository.
+Der Workflow `Scheduled monitor checks` ruft den Endpunkt alle fünf Minuten auf
+und lässt sich auch über `workflow_dispatch` starten. Seine gemeinsame
+`concurrency`-Gruppe verhindert parallele Workflow-Läufe; laufende Aufrufe werden
+nicht abgebrochen. Der Workflow muss dafür auf `main` liegen.
+
+GitHub-Zeitpläne sind nicht sekundengenau garantiert. Läufe können sich verzögern
+oder bei hoher Last ausfallen; versäumte Zeiträume werden nicht nachgeholt.
+Siehe [GitHub-Dokumentation zum schedule-Auslöser](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+Ein erreichbares Deployment und eingerichtete Secrets sind Voraussetzung;
+einen echten zeitgesteuerten Lauf habe ich noch nicht geprüft.
+
 ## Tests und Qualitätskontrolle
 
 `statuswatch.checks.check_monitor(monitor)` prüft einen gespeicherten Monitor und
@@ -80,7 +116,7 @@ Weiterleitungen und Wiederholungen werden nicht ausgeführt; der Antwortkörper
 wird nicht gelesen. Statuscodes 200–399 gelten als erfolgreich.
 Fehler werden nur als `invalid_url`, `blocked_address`, `dns`, `timeout`, `tls`,
 `connection` oder `http_status` gespeichert und in der Oberfläche mit einer
-kurzen Fehlermeldung angezeigt. Eine automatische Prüfung gibt es noch nicht.
+kurzen Fehlermeldung angezeigt.
 
 Die Entwicklungsabhängigkeiten und lokalen Prüfungen werden so ausgeführt:
 
