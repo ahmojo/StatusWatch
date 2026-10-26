@@ -1,0 +1,7 @@
+**
+!Dockerfile
+!requirements.txt
+!statuswatch/
+!statuswatch/**
+**/__pycache__/
+**/*.py[cod]
