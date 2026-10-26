@@ -32,3 +32,4 @@ def app() -> Generator[Flask]:
         yield application
         db.session.remove()
         db.drop_all()
+        db.engine.dispose()
