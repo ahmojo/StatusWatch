@@ -1,40 +1,44 @@
+{% extends 'base.html' %}
 {% from 'result.html' import show_result %}
-<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <title>Monitore – StatusWatch</title>
-</head>
-<body>
-  <h1>Monitore</h1>
-  <form method="post" action="{{ url_for('auth.logout') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit">Abmelden</button>
-  </form>
-  {% if error %}<p role="alert">{{ error }}</p>{% endif %}
-  <h2>Monitor erstellen</h2>
-  <form method="post" action="{{ url_for('monitors.index') }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <label for="name">Name</label>
-    <input id="name" name="name" value="{{ name }}" minlength="1" maxlength="80" required>
-    <label for="url">URL</label>
-    <input id="url" name="url" type="url" value="{{ url }}" maxlength="2048" required>
-    <button type="submit">Erstellen</button>
-  </form>
+{% block title %}Monitore – StatusWatch{% endblock %}
+{% block content %}
+  <div class="toolbar">
+    <h1>Monitore</h1>
+    <form method="post" action="{{ url_for('auth.logout') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button class="secondary" type="submit">Abmelden</button>
+    </form>
+  </div>
+  <section class="panel">
+    <h2>Monitor erstellen</h2>
+    {% if error %}<p class="notice" role="alert">{{ error }}</p>{% endif %}
+    <form class="form-grid" method="post" action="{{ url_for('monitors.index') }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <div class="field">
+        <label for="name">Name</label>
+        <input id="name" name="name" value="{{ name }}" minlength="1" maxlength="80" required>
+      </div>
+      <div class="field">
+        <label for="url">URL</label>
+        <input id="url" name="url" type="url" value="{{ url }}" maxlength="2048" placeholder="https://example.com" required>
+      </div>
+      <button type="submit">Erstellen</button>
+    </form>
+  </section>
   <h2>Vorhandene Monitore</h2>
-  <ul>
+  <ul class="monitor-list">
     {% for monitor in monitors %}
-    <li>
-      <a href="{{ url_for('monitors.detail', monitor_id=monitor.id) }}">{{ monitor.name }}</a> – {{ monitor.url }}
+    <li class="monitor-card">
+      <h3><a href="{{ url_for('monitors.detail', monitor_id=monitor.id) }}">{{ monitor.name }}</a></h3>
+      <span class="monitor-url">{{ monitor.url }}</span>
       {{ show_result(latest_results[monitor.id]) }}
       <form method="post" action="{{ url_for('monitors.delete', monitor_id=monitor.id) }}">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <button type="submit">Löschen</button>
+        <button class="danger" type="submit">Löschen</button>
       </form>
     </li>
     {% else %}
-    <li>Es sind noch keine Monitore vorhanden.</li>
+    <li class="monitor-card">Es sind noch keine Monitore vorhanden.</li>
     {% endfor %}
   </ul>
-</body>
-</html>
+{% endblock %}

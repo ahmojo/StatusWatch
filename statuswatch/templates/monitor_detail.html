@@ -1,29 +1,26 @@
+{% extends 'base.html' %}
 {% from 'result.html' import show_result %}
-<!doctype html>
-<html lang="de">
-<head>
-  <meta charset="utf-8">
-  <title>{{ monitor.name }} – StatusWatch</title>
-</head>
-<body>
-  <p><a href="{{ url_for('monitors.index') }}">Zur Monitorübersicht</a></p>
-  <h1>{{ monitor.name }}</h1>
-  <p>{{ monitor.url }}</p>
-  {% for message in get_flashed_messages() %}
-  <p role="alert">{{ message }}</p>
-  {% endfor %}
-  <form method="post" action="{{ url_for('monitors.check', monitor_id=monitor.id) }}">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <button type="submit">Jetzt prüfen</button>
-  </form>
-  <p>Zwischen zwei Prüfungen gelten 30 Sekunden Pause.</p>
+{% block title %}{{ monitor.name }} – StatusWatch{% endblock %}
+{% block content %}
+  <a class="back-link" href="{{ url_for('monitors.index') }}">← Zur Monitorübersicht</a>
+  <section class="panel">
+    <h1>{{ monitor.name }}</h1>
+    <p class="monitor-url">{{ monitor.url }}</p>
+    {% for message in get_flashed_messages() %}
+    <p class="notice" role="alert">{{ message }}</p>
+    {% endfor %}
+    <form class="check-form" method="post" action="{{ url_for('monitors.check', monitor_id=monitor.id) }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit">Jetzt prüfen</button>
+    </form>
+    <p class="hint">Zwischen zwei Prüfungen gelten 30 Sekunden Pause.</p>
+  </section>
   <h2>Letzte Ergebnisse (höchstens zehn)</h2>
-  <ol>
+  <ol class="history">
     {% for result in results %}
     <li>{{ show_result(result) }}</li>
     {% else %}
-    <li>Noch nicht geprüft</li>
+    <li class="empty">Noch nicht geprüft</li>
     {% endfor %}
   </ol>
-</body>
-</html>
+{% endblock %}
