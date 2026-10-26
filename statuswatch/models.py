@@ -72,6 +72,9 @@ class CheckResult(db.Model):
             name="error_matches_success",
         ),
         Index("ix_check_results_monitor_checked", "monitor_id", "checked_at"),
+        UniqueConstraint(
+            "monitor_id", "scheduled_period", name="uq_check_results_monitor_period"
+        ),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True)
@@ -85,4 +88,5 @@ class CheckResult(db.Model):
     response_time_ms: Mapped[int | None] = mapped_column(Integer)
     success: Mapped[bool] = mapped_column(Boolean, nullable=False)
     error_category: Mapped[str | None] = mapped_column(String(50))
+    scheduled_period: Mapped[int | None] = mapped_column(Integer)
     monitor: Mapped[Monitor] = relationship(back_populates="check_results")

@@ -76,7 +76,7 @@ def test_status_and_persistence(app, network, status):
     connection.close.assert_called_once()
     assert set(stored.__table__.columns.keys()) == {
         "id", "monitor_id", "checked_at", "status_code", "response_time_ms",
-        "success", "error_category",
+        "success", "error_category", "scheduled_period",
     }
 
 

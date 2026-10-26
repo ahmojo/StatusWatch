@@ -8,6 +8,7 @@ from statuswatch.config import load_config
 from statuswatch.database import db, init_database_command
 from statuswatch.health import health_blueprint
 from statuswatch.monitors import monitors_blueprint
+from statuswatch.scheduler import scheduler_blueprint
 
 csrf = CSRFProtect()
 
@@ -22,8 +23,11 @@ def create_app(test_config: dict[str, object] | None = None) -> Flask:
 
     db.init_app(app)
     csrf.init_app(app)
+    # This endpoint uses its own header token instead of browser cookies.
+    csrf.exempt(scheduler_blueprint)
     app.cli.add_command(init_database_command)
     app.register_blueprint(health_blueprint)
     app.register_blueprint(auth_blueprint)
     app.register_blueprint(monitors_blueprint)
+    app.register_blueprint(scheduler_blueprint)
     return app

@@ -11,9 +11,12 @@ from statuswatch.models import CheckResult, Monitor
 from statuswatch.monitors import normalize_url
 
 
-def check_monitor(monitor: Monitor) -> CheckResult:
+def check_monitor(
+    monitor: Monitor, *, scheduled_period: int | None = None
+) -> CheckResult:
     result = CheckResult(
-        monitor_id=monitor.id, checked_at=datetime.now(UTC), success=False
+        monitor_id=monitor.id, checked_at=datetime.now(UTC), success=False,
+        scheduled_period=scheduled_period,
     )
     started = monotonic()
     connection = None
