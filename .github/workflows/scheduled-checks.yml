@@ -1,0 +1,29 @@
+name: Scheduled monitor checks
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: statuswatch-scheduled-checks
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 4
+    steps:
+      - name: Check active monitors
+        env:
+          STATUSWATCH_URL: ${{ vars.STATUSWATCH_URL }}
+          SCHEDULER_TOKEN: ${{ secrets.SCHEDULER_TOKEN }}
+        run: |
+          test -n "$STATUSWATCH_URL"
+          test -n "$SCHEDULER_TOKEN"
+          curl --fail --silent --show-error --proto '=https' --max-time 180 \
+            --request POST \
+            --header "Authorization: Bearer $SCHEDULER_TOKEN" \
+            "${STATUSWATCH_URL%/}/internal/checks"
