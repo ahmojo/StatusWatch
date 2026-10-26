@@ -25,6 +25,11 @@ Versions-Tag und vollständiger Commit-SHA verweisen auf dasselbe Image;
 der Registry-Digest wird in der Actions-Summary festgehalten.
 Ein Release-Tag und ein veröffentlichtes Image für diese Änderung fehlen noch.
 
+Für die Azure-Auslieferung habe ich
+[Issue #19](https://github.com/ahmojo/StatusWatch/issues/19) erstellt.
+Der Release-Build hinterlegt den vollständigen Commit im Image und im
+OCI-Label `org.opencontainers.image.revision`.
+
 ## D1: Automatisierter Integrationsprozess
 
 GitHub Actions führt bei Pull Requests die gleichen pre-commit-Prüfungen wie
@@ -32,10 +37,10 @@ lokal aus, einschliesslich Ruff und pytest mit mindestens 85 % Zeilenabdeckung.
 Die Tests prüfen unter anderem Anmeldung, Zugriffsschutz und Monitorverwaltung.
 Lokal habe ich mit Python 3.14 und SQLite geprüft:
 
-- `.venv\Scripts\python.exe -m pytest`: 137 Tests bestanden.
+- `.venv\Scripts\python.exe -m pytest`: 141 Tests bestanden.
 - `.venv\Scripts\python.exe -m ruff check .`: keine Fehler.
 - `python -m pre_commit run --all-files` in der aktivierten `.venv`: bestanden.
-- Zeilenabdeckung: 98,99 %; die Mindestgrenze von 85 % ist erfüllt.
+- Zeilenabdeckung: 99,03 %; die Mindestgrenze von 85 % ist erfüllt.
 
 Ich habe die Ablehnung von Leerzeichenfehlern, fehlendem abschliessendem
 Zeilenumbruch, Konfliktmarkern und unerwünschten Dateiendungen separat geprüft.
@@ -77,3 +82,40 @@ die Daten erhalten.
 
 Release-YAML, Shellsyntax und gültige/ungültige Versionsbeispiele habe ich lokal
 geprüft. Ein echter GHCR-Push und ein Azure-Deployment wurden nicht ausgeführt.
+
+Ich habe das geänderte Image lokal mit PostgreSQL gestartet. Die Initialisierung
+beim Containerstart, Anmeldung, Speicherung, Neustart und Container-Neuerstellung
+waren erfolgreich. Bei gestoppter Datenbank antwortete `/health/live` mit 200
+und `/health/ready` mit 503. Nach dem Datenbank-Neustart antwortete die
+Bereitschaftsprüfung wieder mit 200; Monitor und Ergebnis blieben erhalten.
+Der Container lief als UID 10001 mit einem Gunicorn-Worker.
+
+Der vorbereitete Workflow `Deploy tested release` hat einen manuellen Auslöser
+auf `main` mit einem stabilen SemVer-Tag. Er verlangt einen erfolgreichen
+Release-Lauf für genau diesen Tag und Commit, vergleicht die Digests von
+Versions- und SHA-Tag und setzt das vorhandene GHCR-Image per Digest.
+Er baut kein Image. Die Prüfung wartet auf den erwarteten laufenden Commit
+und eine erfolgreiche Datenbankabfrage. Vorherige Image-Konfiguration, Version,
+Commit, Digest und Prüfzeit in UTC stehen in der Actions-Summary.
+Ein manueller Rollback verwendet denselben Workflow mit dem vorherigen
+getesteten Tag; die Datenbank wird dabei nicht zurückgesetzt.
+
+Die GitHub-Umgebung `production` benötigt die Variablen `AZURE_CLIENT_ID`,
+`AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP` und
+`AZURE_WEBAPP_NAME`. Für die noch einzurichtende OIDC-Verbindung ist das Vertrauen
+auf diese Umgebung dieses Repositories und die Rolle auf die Web-App begrenzt.
+Datenbankzugang und
+Anwendungs-Secrets bleiben in der Azure-Konfiguration. Für den einzelnen
+Container ist `WEBSITES_PORT=8000` erforderlich; das GHCR-Paket muss öffentlich
+lesbar sein. Es werden keine Azure-Passwörter oder Publishing-Profile in GitHub
+benötigt.
+
+YAML und Shellsyntax habe ich geprüft. Mit ersetzten externen Aufrufen habe ich
+acht Workflow-Fälle ausgeführt: Erfolg, ungültige Version, fehlender Release-Lauf,
+abweichender Digest, abweichende Azure-Konfiguration, falscher laufender Commit,
+Datenbankausfall und verzögerter Start. Die erwartete Annahme oder Ablehnung
+trat jeweils ein. Das ersetzt keinen echten Azure-Deploymentlauf.
+
+Noch offen sind OIDC-Konfiguration, Veröffentlichung der Images und der echte
+Azure-Nachweis mit öffentlichem Testziel, Neustart-Persistenz und Rollback.
+Die abschliessende Prüfung gegen C1, D1 und E1 ist deshalb noch nicht erfüllt.

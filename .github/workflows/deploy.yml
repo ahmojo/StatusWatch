@@ -1,0 +1,97 @@
+name: Deploy tested release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Tested SemVer tag (also used for a manual rollback)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+  actions: read
+  id-token: write
+
+concurrency:
+  group: statuswatch-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      VERSION: ${{ inputs.version }}
+      AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
+      AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Resolve tested release and public image
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          [[ "$VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+          git fetch --no-tags origin "refs/tags/$VERSION:refs/tags/$VERSION"
+          COMMIT=$(git rev-parse "$VERSION^{commit}")
+          RELEASE_URL=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow release.yml \
+            --branch "$VERSION" --commit "$COMMIT" --event push --status success \
+            --json url --jq '.[0].url // empty')
+          test -n "$RELEASE_URL"
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          DIGEST=$(docker manifest inspect --verbose "$IMAGE:$VERSION" | jq -er '.Descriptor.digest')
+          SHA_DIGEST=$(docker manifest inspect --verbose "$IMAGE:sha-$COMMIT" | jq -er '.Descriptor.digest')
+          [[ "$DIGEST" =~ ^sha256:[0-9a-f]{64}$ ]]
+          test "$DIGEST" = "$SHA_DIGEST"
+          printf 'commit=%s\nimage=%s@%s\n' "$COMMIT" "$IMAGE" "$DIGEST" >> "$GITHUB_OUTPUT"
+          printf 'Version: `%s`\n\nCommit: `%s`\n\nImage-Tag: `%s:%s`\n\nDigest: `%s`\n\nRelease: %s\n' \
+            "$VERSION" "$COMMIT" "$IMAGE" "$VERSION" "$DIGEST" "$RELEASE_URL" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Log in to Azure with OIDC
+        uses: azure/login@053f7285eb20bf5469ef084617b0b24d3cec53fc # v3.1.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy exact image and verify running commit
+        env:
+          IMAGE: ${{ steps.release.outputs.image }}
+          COMMIT: ${{ steps.release.outputs.commit }}
+        shell: bash
+        run: |
+          test -n "$AZURE_RESOURCE_GROUP"
+          test -n "$AZURE_WEBAPP_NAME"
+          PREVIOUS=$(az webapp config show --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" --query linuxFxVersion --output tsv)
+          printf '\nPrevious image configuration: `%s`\n' "$PREVIOUS" >> "$GITHUB_STEP_SUMMARY"
+          az webapp config container set --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" --container-image-name "$IMAGE" \
+            --container-registry-url https://ghcr.io --output none
+          ACTIVE=$(az webapp config show --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" --query linuxFxVersion --output tsv)
+          test "$ACTIVE" = "DOCKER|$IMAGE"
+          HOST=$(az webapp show --resource-group "$AZURE_RESOURCE_GROUP" \
+            --name "$AZURE_WEBAPP_NAME" --query defaultHostName --output tsv)
+          VERIFIED=false
+          for attempt in {1..30}; do
+            if curl --fail --silent --show-error --proto '=https' --max-time 10 \
+              "https://$HOST/health/live" | jq -e --arg commit "$COMMIT" \
+              '.status == "ok" and .commit == $commit'; then
+              if curl --fail --silent --show-error --proto '=https' --max-time 10 \
+                "https://$HOST/health/ready" | jq -e '.status == "ok" and .database == "ok"'; then
+                VERIFIED=true
+                break
+              fi
+            fi
+            sleep 10
+          done
+          test "$VERIFIED" = true
+          printf '\nVerified configuration: `%s`\n\nLive commit: `%s`\n\nReady: HTTP 200\n\nUTC: `%s`\n' \
+            "$ACTIVE" "$COMMIT" "$(date -u +%FT%TZ)" >> "$GITHUB_STEP_SUMMARY"
