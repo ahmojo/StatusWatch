@@ -6,7 +6,8 @@ Die [Dokumentation zu C1, D1 und E1](docs/documentation.md) liegt unter `docs`.
 
 Flask-Grundgerüst, Datenbankmodelle, Anmeldung, Monitorverwaltung, Tests und
 PR-Prüfungen, synchrone HTTP-Prüfung, Ergebnisanzeige und der Aufruf durch GitHub Actions
-sind umgesetzt. Docker und Azure sind noch nicht umgesetzt.
+sind umgesetzt. Der lokale Docker-Start ist geprüft; der Release-Workflow für
+GHCR ist vorbereitet. Ein Azure-Deployment ist noch nicht umgesetzt.
 
 ## Lokal starten
 
@@ -105,6 +106,49 @@ oder bei hoher Last ausfallen; versäumte Zeiträume werden nicht nachgeholt.
 Siehe [GitHub-Dokumentation zum schedule-Auslöser](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
 Ein erreichbares Deployment und eingerichtete Secrets sind Voraussetzung;
 einen echten zeitgesteuerten Lauf habe ich noch nicht geprüft.
+
+## Lokal mit Docker Compose starten
+
+Voraussetzung ist Docker mit Compose. In der lokalen `.env` müssen `SECRET_KEY`,
+`OPERATOR_PASSWORD`, `SCHEDULER_TOKEN` und `POSTGRES_PASSWORD` eigene Werte haben.
+Für Compose muss `DATABASE_URL` auf den Host `db` zeigen und dasselbe Passwort
+wie `POSTGRES_PASSWORD` enthalten. Datenbank und Benutzer heissen standardmässig
+`statuswatch`; Sonderzeichen im URL-Passwort müssen URL-kodiert sein.
+Die `.env` wird nicht in das Image kopiert oder versioniert.
+
+```powershell
+docker compose up --build -d --wait
+docker compose exec web flask --app statuswatch:create_app init-db
+Invoke-RestMethod http://127.0.0.1:8000/health
+docker compose ps
+```
+
+Die Anmeldung liegt unter `http://127.0.0.1:8000/`. `WEB_PORT` kann den lokalen
+Port ändern. PostgreSQL hat keinen veröffentlichten Host-Port.
+Die Anwendung läuft als UID 10001 mit genau einem Gunicorn-Worker und einem
+Worker-Timeout von 120 Sekunden für die synchronen Prüfungen.
+Der Healthcheck prüft `/health`; er prüft keine Datenbankabfrage.
+
+`docker compose restart` startet die Dienste neu. Das benannte Volume `database`
+erhält Monitore und Ergebnisse auch bei einer Neuerstellung der Container.
+Für Neustarts dieselben Konfigurationswerte verwenden. `docker compose down`
+behält das Volume; `docker compose down -v` würde die Daten löschen.
+`init-db` legt nur fehlende Tabellen an und ersetzt keine Schema-Migration.
+
+## Container-Release
+
+Die einzige Registry für veröffentlichte Projekt-Images ist GHCR:
+`ghcr.io/ahmojo/statuswatch`. Der Workflow `Release container` wird durch stabile
+SemVer-Tags wie `v0.1.0` ausgelöst. Er prüft pytest mit Coverage und Ruff vor dem
+Build. Danach wird genau ein Image für `linux/amd64` gebaut und mit zwei Tags
+veröffentlicht: `v0.1.0` und `sha-<vollständiger Commit-SHA>`.
+Der Zugriff erfolgt über das `GITHUB_TOKEN` des Workflows mit `packages: write`.
+Version, vollständiger Commit-SHA und Registry-Digest stehen anschliessend in
+der Summary des Actions-Laufs. Der Digest identifiziert das veröffentlichte Image.
+
+Vor dem Erstellen oder Pushen eines Release-Tags ist eine ausdrückliche Freigabe
+nötig. Bisher wurde für diese Änderung kein Tag erstellt oder Image veröffentlicht.
+Der Workflow führt kein Deployment aus.
 
 ## Tests und Qualitätskontrolle
 
