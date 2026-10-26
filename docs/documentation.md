@@ -12,10 +12,18 @@ Ich verwalte den Code mit Git und GitHub. Für die Anmeldung und Monitorverwaltu
 habe ich [Issue #7](https://github.com/ahmojo/StatusWatch/issues/7), einen Branch
 und [PR #8](https://github.com/ahmojo/StatusWatch/pull/8) erstellt. Ich habe die
 Änderungen auf drei Commits verteilt, damit Anmeldung, Monitorverwaltung und
-Tests getrennt nachvollziehbar sind. Ein Container-Artefakt gibt es noch nicht.
+Tests getrennt nachvollziehbar sind. Ein veröffentlichtes Container-Artefakt
+gibt es noch nicht.
 
 Für die lokalen Qualitätsprüfungen und die PR-/User-Story-Vorlagen habe ich
 [Issue #15](https://github.com/ahmojo/StatusWatch/issues/15) erstellt.
+
+Für Docker und das Container-Artefakt habe ich
+[Issue #17](https://github.com/ahmojo/StatusWatch/issues/17) erstellt.
+Der Release-Workflow veröffentlicht ein Image ausschliesslich nach GHCR.
+Versions-Tag und vollständiger Commit-SHA verweisen auf dasselbe Image;
+der Registry-Digest wird in der Actions-Summary festgehalten.
+Ein Release-Tag und ein veröffentlichtes Image für diese Änderung fehlen noch.
 
 ## D1: Automatisierter Integrationsprozess
 
@@ -56,4 +64,16 @@ sind bisher nur lokal ausgeführt; ein CI-Nachweis für diese Änderung fehlt no
 
 ## E1: Automatisierter Deploymentprozess
 
-Ein Deployment ist noch nicht umgesetzt und wurde nicht geprüft.
+Ich habe den lokalen Compose-Stack mit Python 3.11 und PostgreSQL 16 gestartet.
+Webdienst und Datenbank meldeten `healthy`; `/health` antwortete mit HTTP 200.
+Die Anwendung lief als UID 10001 mit genau einem Gunicorn-Worker.
+
+Über die Anmeldung und das Formular habe ich einen Test-Monitor angelegt.
+Der geschützte Prüfaufruf speicherte ein Ergebnis für eine blockierte lokale
+Adresse; es wurde keine externe Zielseite aufgerufen. Nach Neustart und
+Container-Neuerstellung waren Monitor und Ergebnis unverändert und weiterhin
+in der Oberfläche sichtbar. Auch nach dem Neubau des finalen Images blieben
+die Daten erhalten.
+
+Release-YAML, Shellsyntax und gültige/ungültige Versionsbeispiele habe ich lokal
+geprüft. Ein echter GHCR-Push und ein Azure-Deployment wurden nicht ausgeführt.

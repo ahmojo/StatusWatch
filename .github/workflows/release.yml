@@ -1,0 +1,55 @@
+name: Release container
+
+on:
+  push:
+    tags:
+      - "v*.*.*"
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Validate version
+        env:
+          VERSION: ${{ github.ref_name }}
+        run: |
+          [[ "$VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
+
+      - name: Check out repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Set up Python
+        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: requirements-dev.txt
+
+      - name: Run tests and Ruff
+        run: |
+          python -m pip install -r requirements-dev.txt
+          python -m pytest
+          python -m ruff check .
+
+      - name: Build and publish one image
+        env:
+          VERSION: ${{ github.ref_name }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}"
+          docker build --platform linux/amd64 --provenance=false --sbom=false \
+            --label "org.opencontainers.image.source=https://github.com/$GITHUB_REPOSITORY" \
+            --tag "$IMAGE:$VERSION" --tag "$IMAGE:sha-$GITHUB_SHA" .
+          printf '%s' "$GHCR_TOKEN" | docker login ghcr.io -u "$GITHUB_ACTOR" --password-stdin
+          docker push "$IMAGE:$VERSION"
+          docker push "$IMAGE:sha-$GITHUB_SHA"
+          DIGEST=$(docker image inspect "$IMAGE:$VERSION" --format '{{index .RepoDigests 0}}')
+          [[ "$DIGEST" == "$IMAGE@sha256:"* ]]
+          printf 'Version: `%s`\n\nCommit: `%s`\n\nImage: `%s:%s`\n\nSHA-Tag: `%s:sha-%s`\n\nDigest: `%s`\n' \
+            "$VERSION" "$GITHUB_SHA" "$IMAGE" "$VERSION" "$IMAGE" "$GITHUB_SHA" "$DIGEST" \
+            >> "$GITHUB_STEP_SUMMARY"
