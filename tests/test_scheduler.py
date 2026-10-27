@@ -208,13 +208,14 @@ def test_browser_session_cannot_replace_scheduler_token(app, client, monitors):
     assert response.status_code == 400
 
 
-def test_workflow_has_five_minute_schedule_dispatch_and_shared_concurrency():
+def test_workflow_has_only_manual_dispatch_and_shared_concurrency():
     path = Path(__file__).parents[1] / ".github/workflows/scheduled-checks.yml"
     workflow = path.read_text()
     assert re.search(
-        r'^on:\n  schedule:\n    - cron: "\*/5 \* \* \* \*"\n  workflow_dispatch:',
+        r'^on:\n  workflow_dispatch:',
         workflow, re.M,
     )
+    assert not re.search(r'^\s*schedule:', workflow, re.M)
     assert (
         "concurrency:\n  group: statuswatch-scheduled-checks\n  cancel-in-progress: false"
         in workflow

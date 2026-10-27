@@ -18,4 +18,4 @@ EXPOSE 8000
 HEALTHCHECK --interval=10s --timeout=3s --start-period=10s --retries=3 \
     CMD python -c "from urllib.request import urlopen; urlopen('http://127.0.0.1:8000/health/live', timeout=2).close()"
 
-CMD ["sh", "-c", "flask --app statuswatch:create_app init-db && exec gunicorn --bind 0.0.0.0:8000 --workers 1 --timeout 120 'statuswatch:create_app()'"]
+CMD ["sh", "-c", "flask --app statuswatch:create_app init-db && exec python -m statuswatch.server"]

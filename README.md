@@ -5,7 +5,7 @@ StatusWatch ist mein Projekt für Modul 324. Die Anwendung soll bis zu zehn öff
 Die [Dokumentation zu C1, D1 und E1](docs/documentation.md) liegt unter `docs`.
 
 Flask-Grundgerüst, Datenbankmodelle, Anmeldung, Monitorverwaltung, Tests und
-PR-Prüfungen, synchrone HTTP-Prüfung, Ergebnisanzeige und der Aufruf durch GitHub Actions
+PR-Prüfungen, synchrone HTTP-Prüfung, Ergebnisanzeige und der geschützte Prüf-Endpunkt
 sind umgesetzt. Der lokale Docker-Start ist geprüft; der Release-Workflow für
 GHCR ist vorbereitet. Der manuelle Azure-Deployment-Workflow ist vorbereitet,
 aber noch nicht in Azure ausgeführt.
@@ -97,16 +97,37 @@ Im GitHub-Repository unter **Settings → Secrets and variables → Actions** we
 das Secret `SCHEDULER_TOKEN` mit demselben Wert wie in der Anwendung und die
 Variable `STATUSWATCH_URL` mit der öffentlich erreichbaren HTTPS-Basisadresse
 ohne Endpunktpfad benötigt. Tokenwerte gehören nicht ins Repository.
-Der Workflow `Scheduled monitor checks` ruft den Endpunkt alle fünf Minuten auf
-und lässt sich auch über `workflow_dispatch` starten. Seine gemeinsame
-`concurrency`-Gruppe verhindert parallele Workflow-Läufe; laufende Aufrufe werden
-nicht abgebrochen. Der Workflow muss dafür auf `main` liegen.
+Im Container startet `python -m statuswatch.server` genau einen Gunicorn-Worker
+und läuft selbst als Scheduler-Prozess. Er sendet alle fünf Minuten einen POST
+an `http://127.0.0.1:8000/internal/checks` mit dem `SCHEDULER_TOKEN` aus der
+Umgebung. Die Aufrufe richten sich nach den UTC-Fünf-Minuten-Grenzen; ihre
+Laufzeit wird nicht zum Intervall addiert. Der erste Aufruf erfolgt an der
+nächsten Grenze nach dem Start. Fehler werden ohne Tokenwert protokolliert;
+der nächste Versuch erfolgt im nächsten Zeitraum. Verpasste Zeiträume werden
+nicht nachgeholt. Bei gestopptem Container finden keine Prüfungen statt.
 
-GitHub-Zeitpläne sind nicht sekundengenau garantiert. Läufe können sich verzögern
-oder bei hoher Last ausfallen; versäumte Zeiträume werden nicht nachgeholt.
-Siehe [GitHub-Dokumentation zum schedule-Auslöser](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
-Ein erreichbares Deployment und eingerichtete Secrets sind Voraussetzung;
-einen echten zeitgesteuerten Lauf habe ich noch nicht geprüft.
+Der Scheduler überwacht den Webprozess. Endet Gunicorn, endet auch der
+Container mit einem Fehlercode. Beim Stoppen beendet der Scheduler Gunicorn.
+`flask run` startet für die lokale Entwicklung nur den Webserver.
+
+Der Workflow `Manual monitor checks` erlaubt weiterhin einen manuellen Aufruf
+über `workflow_dispatch`. Seine gemeinsame `concurrency`-Gruppe verhindert
+parallele Workflow-Läufe. Er enthält keinen Zeitplan. Die Datenbankregel
+verhindert doppelte Ergebnisse bei Überschneidung mit dem Container-Scheduler.
+
+Ich habe am 27.10.2026 mehrstündige Lücken zwischen GitHub-Zeitplan-Läufen
+festgestellt. Die vorhandenen Läufe erhielten nach wenigen Sekunden einen
+Runner und speicherten Ergebnisse. Deshalb habe ich den Zeitgeber in den
+Container verlegt. GitHub kann geplante Läufe verzögern oder auslassen;
+siehe [GitHub-Dokumentation zum schedule-Auslöser](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
+
+Ich habe den geänderten Container am 27.10.2026 lokal mit PostgreSQL geprüft:
+Um 15:15:00 und 15:20:00 UTC entstanden jeweils zwei Ergebnisse ohne manuellen
+Aufruf. Die Testziele scheiterten bereits an der URL-Prüfung; externe Zugriffe
+waren dafür nicht nötig. Ein inaktiver Monitor wurde übersprungen. Nach einem
+Container-Neustart waren alle drei Monitore und vier Ergebnisse erhalten.
+Stoppen beendete beide Prozesse; ein beendeter Gunicorn-Master führte zum
+Container-Exit mit Fehlercode 1. Diese Prüfung war lokal, nicht in Azure.
 
 ## Lokal mit Docker Compose starten
 
