@@ -1,8 +1,6 @@
-name: Scheduled monitor checks
+name: Manual monitor checks
 
 on:
-  schedule:
-    - cron: "*/5 * * * *"
   workflow_dispatch:
 
 permissions: {}
