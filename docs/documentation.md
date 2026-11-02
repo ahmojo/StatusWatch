@@ -25,8 +25,6 @@ vom 2. November 2026 gehört zu Commit
 **Eigenleistung:** Ich habe die Anforderungen für StatusWatch festgelegt und
 die Entwicklung über Issues, Branches und Pull Requests gesteuert. Den Code
 habe ich mit KI erstellt, die Änderungen reviewt und zur Übernahme freigegeben.
-Das Projekt wird als Container-Image veröffentlicht. Version, Commit und Digest
-machen nachvollziehbar, welcher Code zu einer Veröffentlichung gehört.
 
 ## D1: Automatisierter Integrationsprozess
 
@@ -50,8 +48,9 @@ war erfolgreich. Lokale Ergebnisse vom 2. November 2026 mit Python 3.14:
 | `python -m pre_commit run --all-files` | bestanden |
 | actionlint 1.7.12, ohne ShellCheck/Pyflakes | vier Workflow-Dateien bestanden |
 
-Neun neue Deploymenttests prüfen Release-Auflösung und Fehlerfälle mit ersetzten
-Git-/Registry-Befehlen. Die Tests belegen keinen echten Azure-Ablauf.
+Neun Deploymenttests prüfen Release-Auflösung und Fehlerfälle mit simulierten
+Git- und Registry-Antworten. Den Azure-Ablauf haben wir zusätzlich live geprüft
+(siehe E1).
 
 **Eigenleistung:** Ich habe den mit KI erstellten Code reviewt, die
 Testergebnisse geprüft und die Anwendung im Browser getestet. Trotz
@@ -75,8 +74,7 @@ Der Ablauf bei einem neuen Versions-Tag:
 4. Azure übernimmt das Image; Healthchecks prüfen Commit und Datenbank.
 
 Azure-Zugriff erfolgt über OIDC; Secrets bleiben ausserhalb des Repositories.
-Ein manueller Start mit einem älteren getesteten Tag ermöglicht den Rollback
-des Images. Er setzt keine Datenbankänderungen zurück.
+Für einen Rollback wird eine frühere getestete Version erneut ausgeliefert.
 
 Am 2. November 2026 antworteten [Loginseite](https://lb-324.ahmet-ilhan.tech/),
 [/health/live](https://lb-324.ahmet-ilhan.tech/health/live) und
