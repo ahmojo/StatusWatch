@@ -84,7 +84,12 @@ Am 2. November 2026 antworteten [Loginseite](https://lb-324.ahmet-ilhan.tech/),
 Nach dem Deployment entsprach der laufende Commit `v0.1.4`;
 die Datenbankabfrage war erfolgreich.
 
-Offen bleiben Azure-Nachweise für Neustart-Persistenz und Rollback.
+Am 2. November 2026 wurde die Azure-Web-App neu gestartet. Alle drei Monitore
+und ihre vor dem Neustart zuletzt gespeicherten Ergebnisse blieben erhalten.
+Anschliessend waren der [Rollback auf v0.1.3](https://github.com/ahmojo/StatusWatch/actions/runs/41458256143)
+und die [Wiederherstellung von v0.1.4](https://github.com/ahmojo/StatusWatch/actions/runs/41458583933)
+erfolgreich. Nach beiden Wechseln stimmte der laufende Commit; Anmeldung,
+Datenbank und der Vergleich mit den zuvor gespeicherten Daten waren erfolgreich.
 
 **Eigenleistung:** Ich habe die Azure-Lösung unter Berücksichtigung der Kosten
 ausgewählt und Einrichtung sowie Deployment mit KI umgesetzt. Wegen des
