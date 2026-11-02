@@ -1,6 +1,9 @@
 name: Deploy tested release
 
 on:
+  workflow_run:
+    workflows: ["Release container"]
+    types: [completed]
   workflow_dispatch:
     inputs:
       version:
@@ -19,17 +22,27 @@ concurrency:
 
 jobs:
   deploy:
-    if: github.ref == 'refs/heads/main'
+    if: >-
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       (github.event.workflow_run.conclusion == 'success' &&
+        github.event.workflow_run.event == 'push' &&
+        github.event.workflow_run.path == '.github/workflows/release.yml' &&
+        github.event.workflow_run.head_repository.full_name == github.repository))
     environment: production
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      VERSION: ${{ inputs.version }}
+      VERSION: ${{ inputs.version || github.event.workflow_run.head_branch }}
+      RELEASE_COMMIT: ${{ github.event.workflow_run.head_sha }}
       AZURE_RESOURCE_GROUP: ${{ vars.AZURE_RESOURCE_GROUP }}
       AZURE_WEBAPP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
     steps:
       - name: Check out repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: main
+          fetch-depth: 0
 
       - name: Resolve tested release and public image
         id: release
@@ -40,6 +53,10 @@ jobs:
           [[ "$VERSION" =~ ^v(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)$ ]]
           git fetch --no-tags origin "refs/tags/$VERSION:refs/tags/$VERSION"
           COMMIT=$(git rev-parse "$VERSION^{commit}")
+          git merge-base --is-ancestor "$COMMIT" HEAD
+          if [[ "$GITHUB_EVENT_NAME" == workflow_run ]]; then
+            test "$COMMIT" = "$RELEASE_COMMIT"
+          fi
           RELEASE_URL=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow release.yml \
             --branch "$VERSION" --commit "$COMMIT" --event push --status success \
             --json url --jq '.[0].url // empty')
