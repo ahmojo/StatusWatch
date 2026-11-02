@@ -218,6 +218,24 @@ def test_target_errors_are_saved_and_displayed(client, monitor, target, failure,
     assert db.session.scalar(select(CheckResult)).error_category == failure
 
 
+def test_http_403_is_displayed_as_access_denied(client, monitor, target):
+    target[1].getresponse.return_value.status = 403
+    response = client.post(
+        f"/monitors/{monitor.id}/check", data={"csrf_token": token(client)},
+        follow_redirects=True,
+    )
+    assert response.status_code == 200
+    for page in (response, client.get("/")):
+        assert "Zugriff verweigert" in page.text
+        assert "Die Website hat die Prüfanfrage abgelehnt." in page.text
+        assert "Nicht erreichbar" not in page.text
+        assert "403" in page.text
+    result = db.session.scalar(select(CheckResult))
+    assert result.status_code == 403
+    assert result.error_category == "http_status"
+    assert result.success is False
+
+
 def test_utc_format_accepts_naive_and_offset_times():
     assert utc_time(datetime(2026, 1, 1, 12)) == "2026-01-01 12:00:00 UTC"
     assert utc_time(datetime(2026, 1, 1, 14, tzinfo=timezone(timedelta(hours=2)))) == (

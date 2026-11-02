@@ -1,7 +1,7 @@
 {% macro show_result(result) %}
 <dl class="result">
   <dt>Zustand</dt>
-  <dd><span class="state{% if result %} {{ 'ok' if result.success else 'failed' }}{% endif %}">{% if not result %}Noch nicht geprüft{% elif result.success %}Erreichbar{% else %}Nicht erreichbar{% endif %}</span></dd>
+  <dd><span class="state{% if result %} {{ 'ok' if result.success else 'failed' }}{% endif %}">{% if not result %}Noch nicht geprüft{% elif result.status_code == 403 %}Zugriff verweigert{% elif result.success %}Erreichbar{% else %}Nicht erreichbar{% endif %}</span></dd>
   <dt>Prüfzeit</dt>
   <dd>{{ result.checked_at|utc_time if result else '–' }}</dd>
   <dt>Antwortzeit</dt>
@@ -11,7 +11,7 @@
   {% endif %}
   {% if result and result.error_category %}
   <dt>Fehler</dt>
-  <dd>{{ {
+  <dd>{% if result.status_code == 403 %}Die Website hat die Prüfanfrage abgelehnt.{% else %}{{ {
     'invalid_url': 'Die Zieladresse ist ungültig.',
     'blocked_address': 'Die Zieladresse ist nicht öffentlich und wird nicht geprüft.',
     'dns': 'Der Hostname konnte nicht aufgelöst werden.',
@@ -19,7 +19,7 @@
     'tls': 'Die verschlüsselte Verbindung ist fehlgeschlagen.',
     'connection': 'Die Verbindung zum Ziel ist fehlgeschlagen.',
     'http_status': 'Das Ziel hat einen HTTP-Fehler gemeldet.'
-  }.get(result.error_category, 'Die Prüfung ist fehlgeschlagen.') }}</dd>
+  }.get(result.error_category, 'Die Prüfung ist fehlgeschlagen.') }}{% endif %}</dd>
   {% endif %}
 </dl>
 {% endmacro %}
