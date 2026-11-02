@@ -22,8 +22,11 @@ Der [Release v0.1.4](https://github.com/ahmojo/StatusWatch/actions/runs/41453995
 vom 2. November 2026 gehört zu Commit
 `a942b90c73e38e2a034a8147f760fd265576f7a7`.
 
-**Eigenleistung selbst ergänzen:** Eigene Arbeit am Beispiel-PR, Verantwortung
-und Entscheidung für den Entwicklungsablauf beschreiben.
+**Eigenleistung:** Ich habe die Anforderungen für StatusWatch festgelegt und
+die Entwicklung über Issues, Branches und Pull Requests gesteuert. Den Code
+habe ich mit KI erstellt, die Änderungen reviewt und zur Übernahme freigegeben.
+Das Projekt wird als Container-Image veröffentlicht. Version, Commit und Digest
+machen nachvollziehbar, welcher Code zu einer Veröffentlichung gehört.
 
 ## D1: Automatisierter Integrationsprozess
 
@@ -50,8 +53,11 @@ war erfolgreich. Lokale Ergebnisse vom 2. November 2026 mit Python 3.14:
 Neun neue Deploymenttests prüfen Release-Auflösung und Fehlerfälle mit ersetzten
 Git-/Registry-Befehlen. Die Tests belegen keinen echten Azure-Ablauf.
 
-**Eigenleistung selbst ergänzen:** Eigenen Beitrag zu Tests und CI benennen;
-einen Test und den damit erkannten Fehler erklären.
+**Eigenleistung:** Ich habe den mit KI erstellten Code reviewt, die
+Testergebnisse geprüft und die Anwendung im Browser getestet. Trotz
+erfolgreicher GitHub-Läufe habe ich festgestellt, dass die Monitorprüfungen
+nicht alle fünf Minuten liefen. Ich habe die Ursache mit KI untersucht,
+die Korrektur veranlasst und das Verhalten anschliessend erneut überprüft.
 
 ## E1: Automatisierter Deploymentprozess
 
@@ -80,5 +86,10 @@ die Datenbankabfrage war erfolgreich.
 
 Offen bleiben Azure-Nachweise für Neustart-Persistenz und Rollback.
 
-**Eigenleistung selbst ergänzen:** Eigene Azure-/Workflow-Arbeit und eine
-Entscheidung anhand eines tatsächlich gelösten Problems beschreiben.
+**Eigenleistung:** Ich habe die Azure-Lösung unter Berücksichtigung der Kosten
+ausgewählt und Einrichtung sowie Deployment mit KI umgesetzt. Wegen des
+unregelmässigen GitHub-Zeitplans habe ich entschieden, den Scheduler im
+Anwendungscontainer auszuführen. Für Veröffentlichungen habe ich den Ablauf
+über Versions-Tags gewählt: Tests, Container-Veröffentlichung und anschliessend
+automatisches Deployment nach Azure. Den vollständigen Ablauf haben wir mit
+`v0.1.4` erfolgreich überprüft.
