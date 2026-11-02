@@ -1,5 +1,7 @@
 # Dokumentation Modul 324
 
+Stand: 2. November 2026.
+
 ## Inhaltsverzeichnis
 
 - [C1: Sourcecode- und Artefaktverwaltung](#c1-sourcecode--und-artefaktverwaltung)
@@ -8,114 +10,75 @@
 
 ## C1: Sourcecode- und Artefaktverwaltung
 
-Ich verwalte den Code mit Git und GitHub. Für die Anmeldung und Monitorverwaltung
-habe ich [Issue #7](https://github.com/ahmojo/StatusWatch/issues/7), einen Branch
-und [PR #8](https://github.com/ahmojo/StatusWatch/pull/8) erstellt. Ich habe die
-Änderungen auf drei Commits verteilt, damit Anmeldung, Monitorverwaltung und
-Tests getrennt nachvollziehbar sind. Ein veröffentlichtes Container-Artefakt
-gibt es noch nicht.
+Die Entwicklung folgt dem Ablauf Issue → Branch → Commits → Pull Request → Merge.
+Beispiel: [Issue #7](https://github.com/ahmojo/StatusWatch/issues/7) beschreibt die
+Anmeldung und Monitorverwaltung; [PR #8](https://github.com/ahmojo/StatusWatch/pull/8)
+enthält Umsetzung und Tests.
 
-Für die lokalen Qualitätsprüfungen und die PR-/User-Story-Vorlagen habe ich
-[Issue #15](https://github.com/ahmojo/StatusWatch/issues/15) erstellt.
+Das ausführbare Artefakt ist ein Container unter `ghcr.io/ahmojo/statuswatch`.
+Versions-Tag, Commit-SHA und Image-Digest ordnen eine Veröffentlichung dem Code zu.
+Azure verwendet den Digest, damit genau das veröffentlichte Image läuft.
+Der [Release v0.1.3](https://github.com/ahmojo/StatusWatch/actions/runs/40531933574)
+vom 27. Oktober 2026 gehört zu Commit
+`b775b00c7cc06d8c1b7d7c2555ae9e1380c25366`.
 
-Für Docker und das Container-Artefakt habe ich
-[Issue #17](https://github.com/ahmojo/StatusWatch/issues/17) erstellt.
-Der Release-Workflow veröffentlicht ein Image ausschliesslich nach GHCR.
-Versions-Tag und vollständiger Commit-SHA verweisen auf dasselbe Image;
-der Registry-Digest wird in der Actions-Summary festgehalten.
-Ein Release-Tag und ein veröffentlichtes Image für diese Änderung fehlen noch.
-
-Für die Azure-Auslieferung habe ich
-[Issue #19](https://github.com/ahmojo/StatusWatch/issues/19) erstellt.
-Der Release-Build hinterlegt den vollständigen Commit im Image und im
-OCI-Label `org.opencontainers.image.revision`.
+**Eigenleistung selbst ergänzen:** Eigene Arbeit am Beispiel-PR, Verantwortung
+und Entscheidung für den Entwicklungsablauf beschreiben.
 
 ## D1: Automatisierter Integrationsprozess
 
-GitHub Actions führt bei Pull Requests die gleichen pre-commit-Prüfungen wie
-lokal aus, einschliesslich Ruff und pytest mit mindestens 85 % Zeilenabdeckung.
-Die Tests prüfen unter anderem Anmeldung, Zugriffsschutz und Monitorverwaltung.
-Lokal habe ich mit Python 3.14 und SQLite geprüft:
+GitHub Actions führt bei Pull Requests pre-commit mit Ruff und pytest aus.
+Vor einem Release laufen pytest und Ruff erneut. Fehler oder eine
+Zeilenabdeckung unter 85 % verhindern die Veröffentlichung.
 
-- `.venv\Scripts\python.exe -m pytest`: 141 Tests bestanden.
-- `.venv\Scripts\python.exe -m ruff check .`: keine Fehler.
-- `python -m pre_commit run --all-files` in der aktivierten `.venv`: bestanden.
-- Zeilenabdeckung: 99,03 %; die Mindestgrenze von 85 % ist erfüllt.
+Der Test `test_manual_check_uses_checker_and_displays_one_saved_result` in
+[tests/test_results.py](../tests/test_results.py) prüft eine konkrete Anforderung:
+Eine manuelle Prüfung muss ein Ergebnis speichern und anzeigen. Der Test
+verbindet Formular, Prüfer, SQLite-Datenbank und Template. DNS und Zielverbindung
+sind ersetzt.
 
-Ich habe die Ablehnung von Leerzeichenfehlern, fehlendem abschliessendem
-Zeilenumbruch, Konfliktmarkern und unerwünschten Dateiendungen separat geprüft.
-Im Testaufbau werden die SQLite-Verbindungen jetzt nach jedem Test geschlossen.
+Der [CI-Lauf zu PR #23](https://github.com/ahmojo/StatusWatch/actions/runs/40531514956)
+war erfolgreich. Lokale Ergebnisse vom 2. November 2026 mit Python 3.14:
 
-Für den synchronen HTTP-Prüfer habe ich
-[Issue #9](https://github.com/ahmojo/StatusWatch/issues/9) erstellt.
-Die Tests ersetzen DNS und Verbindungen und prüfen Adressschutz,
-HTTP-Statuscodes, technische Fehler und die Speicherung ohne Antwortkörper.
+| Prüfung | Ergebnis |
+|---|---|
+| `python -m pytest -p no:cacheprovider` | 157 Tests bestanden, 98,57 % Coverage |
+| `python -m ruff check . --no-cache` | bestanden |
+| `python -m pre_commit run --all-files` | bestanden |
+| actionlint 1.7.12, ohne ShellCheck/Pyflakes | vier Workflow-Dateien bestanden |
 
-Für die Ergebnisanzeige und manuelle Prüfung habe ich
-[Issue #11](https://github.com/ahmojo/StatusWatch/issues/11) erstellt.
-Ich habe Anzeige, die zehn letzten Ergebnisse, UTC-Zeiten, manuelle Prüfungen,
-die 30-Sekunden-Pause, Zugriffsschutz und Fehlerdarstellung mit ersetzten
-Netzwerkzugriffen geprüft. PostgreSQL und Browserbedienung habe ich nicht geprüft.
+Neun neue Deploymenttests prüfen Release-Auflösung und Fehlerfälle mit ersetzten
+Git-/Registry-Befehlen. Die Tests belegen keinen echten Azure-Ablauf.
 
-Für den geschützten automatischen Aufruf habe ich
-[Issue #13](https://github.com/ahmojo/StatusWatch/issues/13) erstellt.
-Ich habe Token-Schutz, aktive Monitore, Reihenfolge, Fortsetzung nach Zielfehlern,
-den Duplikatschutz und die Workflow-Auslöser lokal geprüft.
-Ein echter GitHub-Zeitplanlauf und die PostgreSQL-Schemaänderung sind nicht geprüft.
-
-Der [CI-Lauf zu PR #14](https://github.com/ahmojo/StatusWatch/actions/runs/40287716816)
-hat pytest und Ruff erfolgreich ausgeführt. Die neuen pre-commit-Prüfungen
-sind bisher nur lokal ausgeführt; ein CI-Nachweis für diese Änderung fehlt noch.
+**Eigenleistung selbst ergänzen:** Eigenen Beitrag zu Tests und CI benennen;
+einen Test und den damit erkannten Fehler erklären.
 
 ## E1: Automatisierter Deploymentprozess
 
-Ich habe den lokalen Compose-Stack mit Python 3.11 und PostgreSQL 16 gestartet.
-Webdienst und Datenbank meldeten `healthy`; `/health` antwortete mit HTTP 200.
-Die Anwendung lief als UID 10001 mit genau einem Gunicorn-Worker.
+StatusWatch läuft als Container in Azure App Service mit PostgreSQL.
+Der Container prüft die Monitore alle fünf Minuten. Der
+[Deployment-Lauf für v0.1.3](https://github.com/ahmojo/StatusWatch/actions/runs/40532169194)
+war am 27. Oktober 2026 erfolgreich.
 
-Über die Anmeldung und das Formular habe ich einen Test-Monitor angelegt.
-Der geschützte Prüfaufruf speicherte ein Ergebnis für eine blockierte lokale
-Adresse; es wurde keine externe Zielseite aufgerufen. Nach Neustart und
-Container-Neuerstellung waren Monitor und Ergebnis unverändert und weiterhin
-in der Oberfläche sichtbar. Auch nach dem Neubau des finalen Images blieben
-die Daten erhalten.
+Der Ablauf bei einem neuen Versions-Tag:
 
-Release-YAML, Shellsyntax und gültige/ungültige Versionsbeispiele habe ich lokal
-geprüft. Ein echter GHCR-Push und ein Azure-Deployment wurden nicht ausgeführt.
+1. Versions-Tag pushen: Tests und Container-Veröffentlichung starten.
+2. Erfolgreicher Release: `workflow_run` startet das Deployment.
+3. Der Workflow prüft Release-Commit, main-Zugehörigkeit und Image-Digest.
+4. Azure übernimmt das Image; Healthchecks prüfen Commit und Datenbank.
 
-Ich habe das geänderte Image lokal mit PostgreSQL gestartet. Die Initialisierung
-beim Containerstart, Anmeldung, Speicherung, Neustart und Container-Neuerstellung
-waren erfolgreich. Bei gestoppter Datenbank antwortete `/health/live` mit 200
-und `/health/ready` mit 503. Nach dem Datenbank-Neustart antwortete die
-Bereitschaftsprüfung wieder mit 200; Monitor und Ergebnis blieben erhalten.
-Der Container lief als UID 10001 mit einem Gunicorn-Worker.
+Azure-Zugriff erfolgt über OIDC; Secrets bleiben ausserhalb des Repositories.
+Ein manueller Start mit einem älteren getesteten Tag ermöglicht den Rollback
+des Images. Er setzt keine Datenbankänderungen zurück.
 
-Der vorbereitete Workflow `Deploy tested release` hat einen manuellen Auslöser
-auf `main` mit einem stabilen SemVer-Tag. Er verlangt einen erfolgreichen
-Release-Lauf für genau diesen Tag und Commit, vergleicht die Digests von
-Versions- und SHA-Tag und setzt das vorhandene GHCR-Image per Digest.
-Er baut kein Image. Die Prüfung wartet auf den erwarteten laufenden Commit
-und eine erfolgreiche Datenbankabfrage. Vorherige Image-Konfiguration, Version,
-Commit, Digest und Prüfzeit in UTC stehen in der Actions-Summary.
-Ein manueller Rollback verwendet denselben Workflow mit dem vorherigen
-getesteten Tag; die Datenbank wird dabei nicht zurückgesetzt.
+Am 2. November 2026 antworteten [Loginseite](https://lb-324.ahmet-ilhan.tech/),
+[/health/live](https://lb-324.ahmet-ilhan.tech/health/live) und
+[/health/ready](https://lb-324.ahmet-ilhan.tech/health/ready) mit HTTP 200.
+Der laufende Commit entsprach `v0.1.3`; die Datenbankabfrage war erfolgreich.
 
-Die GitHub-Umgebung `production` benötigt die Variablen `AZURE_CLIENT_ID`,
-`AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`, `AZURE_RESOURCE_GROUP` und
-`AZURE_WEBAPP_NAME`. Für die noch einzurichtende OIDC-Verbindung ist das Vertrauen
-auf diese Umgebung dieses Repositories und die Rolle auf die Web-App begrenzt.
-Datenbankzugang und
-Anwendungs-Secrets bleiben in der Azure-Konfiguration. Für den einzelnen
-Container ist `WEBSITES_PORT=8000` erforderlich; das GHCR-Paket muss öffentlich
-lesbar sein. Es werden keine Azure-Passwörter oder Publishing-Profile in GitHub
-benötigt.
+Offen bleiben der erste echte Lauf des neuen automatischen Auslösers sowie
+Azure-Nachweise für Neustart-Persistenz und Rollback. Die bisherigen erfolgreichen
+Deployments wurden manuell gestartet.
 
-YAML und Shellsyntax habe ich geprüft. Mit ersetzten externen Aufrufen habe ich
-acht Workflow-Fälle ausgeführt: Erfolg, ungültige Version, fehlender Release-Lauf,
-abweichender Digest, abweichende Azure-Konfiguration, falscher laufender Commit,
-Datenbankausfall und verzögerter Start. Die erwartete Annahme oder Ablehnung
-trat jeweils ein. Das ersetzt keinen echten Azure-Deploymentlauf.
-
-Noch offen sind OIDC-Konfiguration, Veröffentlichung der Images und der echte
-Azure-Nachweis mit öffentlichem Testziel, Neustart-Persistenz und Rollback.
-Die abschliessende Prüfung gegen C1, D1 und E1 ist deshalb noch nicht erfüllt.
+**Eigenleistung selbst ergänzen:** Eigene Azure-/Workflow-Arbeit und eine
+Entscheidung anhand eines tatsächlich gelösten Problems beschreiben.

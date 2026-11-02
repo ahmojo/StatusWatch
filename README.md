@@ -1,142 +1,24 @@
 # StatusWatch
 
-StatusWatch ist mein Projekt für Modul 324. Die Anwendung soll bis zu zehn öffentliche Websites alle fünf Minuten prüfen. Eine angemeldete Betreiberperson kann Ziele verwalten, Prüfungen starten und die zehn letzten Ergebnisse ansehen.
+Projekt für Modul 324: Bis zu zehn öffentliche Websites alle fünf Minuten
+prüfen, Status und Antwortzeit speichern und die zehn letzten Ergebnisse anzeigen.
+Die Verwaltung ist passwortgeschützt.
 
-Die [Dokumentation zu C1, D1 und E1](docs/documentation.md) liegt unter `docs`.
+[Live-App](https://lb-324.ahmet-ilhan.tech/) ·
+[Dokumentation C1, D1 und E1](docs/documentation.md)
 
-Flask-Grundgerüst, Datenbankmodelle, Anmeldung, Monitorverwaltung, Tests und
-PR-Prüfungen, synchrone HTTP-Prüfung, Ergebnisanzeige und der geschützte Prüf-Endpunkt
-sind umgesetzt. Der lokale Docker-Start ist geprüft; der Release-Workflow für
-GHCR ist vorbereitet. Der manuelle Azure-Deployment-Workflow ist vorbereitet,
-aber noch nicht in Azure ausgeführt.
+## Lokal mit Docker starten
 
-## Lokal starten
-
-Voraussetzungen: Python 3.11 oder neuer und PowerShell.
+Voraussetzung: Docker mit Compose.
 
 ```powershell
-py -m venv .venv
-.venv\Scripts\Activate.ps1
-python -m pip install --upgrade pip
-python -m pip install -r requirements.txt
 Copy-Item .env.example .env
 ```
 
-Vor dem Start muss `SECRET_KEY` in der lokalen `.env` durch einen zufälligen Wert
-ersetzt und `OPERATOR_PASSWORD` mit einem eigenen Passwort gesetzt werden.
-Ohne diese Werte ist die Anmeldung nicht verfügbar. Die Datei `.env` wird nicht
-versioniert.
-`DATABASE_URL` muss auf die lokale PostgreSQL-Datenbank zeigen. Danach werden die
-Tabellen reproduzierbar initialisiert und die Anwendung gestartet:
-
-```powershell
-flask --app statuswatch:create_app init-db
-flask --app statuswatch:create_app run
-```
-
-Die laufende Anwendung lässt sich lokal prüfen:
-
-```powershell
-Invoke-RestMethod http://127.0.0.1:5000/health
-```
-
-Erwartete Antwort:
-
-```json
-{"status":"ok"}
-```
-
-## Anmeldung und Monitorverwaltung
-
-Unter `http://127.0.0.1:5000/` melde ich mich mit dem Betreiberpasswort an.
-Ein Passwort reicht, weil ich keine Benutzerverwaltung benötige. Die
-Flask-Session speichert die Anmeldung. Abmelden leert die Session.
-Die Verwaltung verlangt eine Anmeldung. Flask-WTF prüft den CSRF-Token
-bei jedem Formularversand.
-
-Nach der Anmeldung kann ich bis zu zehn Monitore anzeigen, erstellen und
-löschen. Namen müssen 1–80 Zeichen lang sein. URLs müssen HTTP oder HTTPS
-verwenden. Nur Ports 80 und 443 sind erlaubt. Gleiche URLs werden nach der
-Vereinheitlichung abgelehnt. Beim Löschen werden zugehörige Prüfergebnisse
-mitgelöscht.
-
-Die Tests prüfen Anmeldung, Zugriffsschutz, CSRF und Monitorverwaltung mit
-SQLite. Netzwerkzugriffe werden in Tests gesperrt oder ersetzt.
-PostgreSQL und Deployment habe ich für diese Änderung nicht geprüft.
-
-Die Übersicht zeigt pro Monitor den letzten Zustand, die Prüfzeit in UTC und die
-Antwortzeit in Millisekunden. Ohne Ergebnis erscheint «Noch nicht geprüft».
-Ein Klick auf den Namen öffnet höchstens zehn Ergebnisse, neuestes zuerst.
-Mit «Jetzt prüfen» starte ich dort den vorhandenen synchronen Prüfer.
-Nach der Prüfung wird die Detailseite mit dem neuen Ergebnis angezeigt.
-Pro Monitor gelten 30 Sekunden Pause ab der letzten Prüfzeit, auch nach Fehlern.
-Während der Pause startet keine neue Prüfung; die Seite zeigt einen Hinweis.
-
-## Automatische Prüfung
-
-`POST /internal/checks` verlangt `Authorization: Bearer <SCHEDULER_TOKEN>`.
-Das separate Token wird in der Anwendungsumgebung als `SCHEDULER_TOKEN` gesetzt.
-Ohne Konfiguration antwortet der Endpunkt mit 503, bei falschem oder fehlendem
-Token mit 401. Er verwendet keine Anmeldung per Browser-Session und ist vom
-CSRF-Schutz ausgenommen; die übrigen Formulare behalten ihren CSRF-Schutz.
-
-Der Aufruf prüft alle aktiven Monitore nacheinander mit dem vorhandenen Prüfer.
-Zielfehler werden gespeichert und stoppen die übrigen Prüfungen nicht.
-Der UTC-Zeitpunkt beim Eingang des Aufrufs bestimmt den Fünf-Minuten-Zeitraum
-für alle Ergebnisse dieses Aufrufs. Bereits gespeicherte automatische Ergebnisse
-dieses Zeitraums werden übersprungen. `UNIQUE (monitor_id, scheduled_period)`
-verhindert doppelte Speicherung auch bei gleichzeitigen Aufrufen.
-Manuelle Ergebnisse haben `scheduled_period = NULL` und bleiben unabhängig.
-
-Für eine neue Datenbank genügt weiterhin `flask --app statuswatch:create_app init-db`.
-Bei einer bestehenden PostgreSQL-Datenbank muss vor dem Start dieser Version
-einmalig [migrations/001_scheduled_period.sql](migrations/001_scheduled_period.sql)
-ausgeführt werden. `init-db` aktualisiert vorhandene Tabellen nicht.
-
-Im GitHub-Repository unter **Settings → Secrets and variables → Actions** werden
-das Secret `SCHEDULER_TOKEN` mit demselben Wert wie in der Anwendung und die
-Variable `STATUSWATCH_URL` mit der öffentlich erreichbaren HTTPS-Basisadresse
-ohne Endpunktpfad benötigt. Tokenwerte gehören nicht ins Repository.
-Im Container startet `python -m statuswatch.server` genau einen Gunicorn-Worker
-und läuft selbst als Scheduler-Prozess. Er sendet alle fünf Minuten einen POST
-an `http://127.0.0.1:8000/internal/checks` mit dem `SCHEDULER_TOKEN` aus der
-Umgebung. Die Aufrufe richten sich nach den UTC-Fünf-Minuten-Grenzen; ihre
-Laufzeit wird nicht zum Intervall addiert. Der erste Aufruf erfolgt an der
-nächsten Grenze nach dem Start. Fehler werden ohne Tokenwert protokolliert;
-der nächste Versuch erfolgt im nächsten Zeitraum. Verpasste Zeiträume werden
-nicht nachgeholt. Bei gestopptem Container finden keine Prüfungen statt.
-
-Der Scheduler überwacht den Webprozess. Endet Gunicorn, endet auch der
-Container mit einem Fehlercode. Beim Stoppen beendet der Scheduler Gunicorn.
-`flask run` startet für die lokale Entwicklung nur den Webserver.
-
-Der Workflow `Manual monitor checks` erlaubt weiterhin einen manuellen Aufruf
-über `workflow_dispatch`. Seine gemeinsame `concurrency`-Gruppe verhindert
-parallele Workflow-Läufe. Er enthält keinen Zeitplan. Die Datenbankregel
-verhindert doppelte Ergebnisse bei Überschneidung mit dem Container-Scheduler.
-
-Ich habe am 27.10.2026 mehrstündige Lücken zwischen GitHub-Zeitplan-Läufen
-festgestellt. Die vorhandenen Läufe erhielten nach wenigen Sekunden einen
-Runner und speicherten Ergebnisse. Deshalb habe ich den Zeitgeber in den
-Container verlegt. GitHub kann geplante Läufe verzögern oder auslassen;
-siehe [GitHub-Dokumentation zum schedule-Auslöser](https://docs.github.com/en/actions/reference/workflows-and-actions/events-that-trigger-workflows#schedule).
-
-Ich habe den geänderten Container am 27.10.2026 lokal mit PostgreSQL geprüft:
-Um 15:15:00 und 15:20:00 UTC entstanden jeweils zwei Ergebnisse ohne manuellen
-Aufruf. Die Testziele scheiterten bereits an der URL-Prüfung; externe Zugriffe
-waren dafür nicht nötig. Ein inaktiver Monitor wurde übersprungen. Nach einem
-Container-Neustart waren alle drei Monitore und vier Ergebnisse erhalten.
-Stoppen beendete beide Prozesse; ein beendeter Gunicorn-Master führte zum
-Container-Exit mit Fehlercode 1. Diese Prüfung war lokal, nicht in Azure.
-
-## Lokal mit Docker Compose starten
-
-Voraussetzung ist Docker mit Compose. In der lokalen `.env` müssen `SECRET_KEY`,
-`OPERATOR_PASSWORD`, `SCHEDULER_TOKEN` und `POSTGRES_PASSWORD` eigene Werte haben.
-Für Compose muss `DATABASE_URL` auf den Host `db` zeigen und dasselbe Passwort
-wie `POSTGRES_PASSWORD` enthalten. Datenbank und Benutzer heissen standardmässig
-`statuswatch`; Sonderzeichen im URL-Passwort müssen URL-kodiert sein.
-Die `.env` wird nicht in das Image kopiert oder versioniert.
+In `.env` eigene Werte für `SECRET_KEY`, `OPERATOR_PASSWORD`, `SCHEDULER_TOKEN`
+und `POSTGRES_PASSWORD` setzen. `DATABASE_URL` muss auf Host `db` zeigen und
+zum Datenbankpasswort passen. Standard für Datenbank und Benutzer: `statuswatch`.
+Sonderzeichen im URL-Passwort müssen URL-kodiert sein. `.env` bleibt lokal.
 
 ```powershell
 docker compose up --build -d --wait
@@ -144,71 +26,100 @@ Invoke-RestMethod http://127.0.0.1:8000/health
 docker compose ps
 ```
 
-Die Anmeldung liegt unter `http://127.0.0.1:8000/`. `WEB_PORT` kann den lokalen
-Port ändern. PostgreSQL hat keinen veröffentlichten Host-Port.
-Die Anwendung läuft als UID 10001 mit genau einem Gunicorn-Worker und einem
-Worker-Timeout von 120 Sekunden für die synchronen Prüfungen.
-Der Healthcheck prüft `/health/live`; er prüft keine Datenbankabfrage.
-`/health/live` zeigt ausserdem den beim Image-Build gesetzten `SOURCE_COMMIT`.
-`/health/ready` führt `SELECT 1` aus und antwortet bei Datenbankfehlern mit 503.
-`/health` bleibt für bisherige Aufrufe verfügbar.
+Die App läuft unter `http://127.0.0.1:8000/`. `WEB_PORT` ändert den lokalen Port.
+Das Volume `database` erhält Daten bei Neustart und Container-Neuerstellung.
+`docker compose down` behält es; `docker compose down -v` löscht die Daten.
 
-`docker compose restart` startet die Dienste neu. Das benannte Volume `database`
-erhält Monitore und Ergebnisse auch bei einer Neuerstellung der Container.
-Für Neustarts dieselben Konfigurationswerte verwenden. `docker compose down`
-behält das Volume; `docker compose down -v` würde die Daten löschen.
-Der Container führt beim Start `init-db` aus. Das legt nur fehlende Tabellen an
-und ersetzt keine Schema-Migration. Bei einem Fehler startet Gunicorn nicht.
+## Entwicklung ohne Docker
 
-## Container-Release
-
-Die einzige Registry für veröffentlichte Projekt-Images ist GHCR:
-`ghcr.io/ahmojo/statuswatch`. Der Workflow `Release container` wird durch stabile
-SemVer-Tags wie `v0.1.0` ausgelöst. Er prüft pytest mit Coverage und Ruff vor dem
-Build. Danach wird genau ein Image für `linux/amd64` gebaut und mit zwei Tags
-veröffentlicht: `v0.1.0` und `sha-<vollständiger Commit-SHA>`.
-Der Zugriff erfolgt über das `GITHUB_TOKEN` des Workflows mit `packages: write`.
-Version, vollständiger Commit-SHA und Registry-Digest stehen anschliessend in
-der Summary des Actions-Laufs. Der Digest identifiziert das veröffentlichte Image.
-
-Vor dem Erstellen oder Pushen eines Release-Tags ist eine ausdrückliche Freigabe
-nötig. Bisher wurde für diese Änderung kein Tag erstellt oder Image veröffentlicht.
-Der Workflow führt kein Deployment aus.
-
-## Tests und Qualitätskontrolle
-
-`statuswatch.checks.check_monitor(monitor)` prüft einen gespeicherten Monitor und
-speichert ein `CheckResult`. Die Funktion benötigt einen Flask-Anwendungskontext.
-Sie erlaubt HTTP/HTTPS auf Ports 80/443 und verbindet erst, wenn alle aufgelösten
-IP-Adressen öffentlich sind. Der Socket-Timeout beträgt fünf Sekunden.
-Weiterleitungen und Wiederholungen werden nicht ausgeführt; der Antwortkörper
-wird nicht gelesen. Statuscodes 200–399 gelten als erfolgreich.
-Fehler werden nur als `invalid_url`, `blocked_address`, `dns`, `timeout`, `tls`,
-`connection` oder `http_status` gespeichert und in der Oberfläche mit einer
-kurzen Fehlermeldung angezeigt.
-
-Die Entwicklungsabhängigkeiten und lokalen Prüfungen werden so ausgeführt:
+Voraussetzungen: Python ab 3.11, PowerShell und eine laufende PostgreSQL-Datenbank.
 
 ```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
 python -m pip install -r requirements-dev.txt
+Copy-Item .env.example .env
+```
+
+`SECRET_KEY` und `OPERATOR_PASSWORD` setzen; `DATABASE_URL` auf die eigene
+PostgreSQL-Datenbank ausrichten. Danach:
+
+```powershell
+flask --app statuswatch:create_app init-db
+flask --app statuswatch:create_app run
+```
+
+Die App läuft unter `http://127.0.0.1:5000/`. `flask run` startet keinen Scheduler.
+`init-db` legt fehlende Tabellen an. Für bestehende Datenbanken ohne
+`scheduled_period` zuerst [die Migration](migrations/001_scheduled_period.sql)
+ausführen; `init-db` aktualisiert bestehende Tabellen nicht.
+
+## Bedienung und Prüfungen
+
+Nach der Anmeldung lassen sich Monitore erstellen, prüfen und löschen.
+Die Detailseite zeigt die zehn letzten Ergebnisse mit UTC-Zeit und Antwortzeit.
+Zwischen manuellen Prüfungen gelten 30 Sekunden Pause. Löschen entfernt auch
+die Ergebnisse des Monitors. Formulare sind durch CSRF-Token geschützt.
+
+Ziele müssen HTTP/HTTPS auf Port 80 oder 443 verwenden. Doppelte URLs und
+private Netzwerkadressen werden abgelehnt. Der Prüfer arbeitet nacheinander,
+mit fünf Sekunden Socket-Timeout und ohne Weiterleitungen oder Wiederholungen.
+HTTP 200–399 gilt als erfolgreich; technische Fehler werden als Kategorie gespeichert.
+
+Im Container startet `python -m statuswatch.server` einen Gunicorn-Worker und
+prüft aktive Monitore an den UTC-Fünf-Minuten-Grenzen. Verpasste Zeiträume
+werden nicht nachgeholt. Endet der Webprozess, endet auch der Container.
+
+`POST /internal/checks` verlangt `Authorization: Bearer <SCHEDULER_TOKEN>`.
+Fehlende Token-Konfiguration ergibt 503, ein falsches Token 401. Eine
+Datenbankregel verhindert doppelte automatische Ergebnisse im selben Zeitraum.
+
+Für den optionalen GitHub-Workflow `Manual monitor checks` braucht es das
+Secret `SCHEDULER_TOKEN` und die Variable `STATUSWATCH_URL` mit der HTTPS-Basisadresse.
+Der Container-Scheduler liest sein Token aus der Anwendungsumgebung.
+
+## Release und Deployment
+
+Ein stabiler Versions-Tag wie `v0.1.4` startet:
+
+1. pytest und Ruff.
+2. Build und Veröffentlichung unter `ghcr.io/ahmojo/statuswatch`.
+3. Nach erfolgreichem Release: Deployment des Images nach Azure.
+
+Das Image erhält Versions- und SHA-Tag; die Workflow-Summary nennt den Digest.
+Der Deployment-Workflow prüft Commit, main-Zugehörigkeit und übereinstimmende
+Digests. Anschliessend prüft er den laufenden Commit und die Datenbank.
+Branch-Pushes lösen kein Deployment aus.
+
+Die Verknüpfung über `workflow_run` liegt auf `main`;
+ihr erster echter Lauf steht noch aus. Bereits erfolgreich:
+[Release v0.1.3](https://github.com/ahmojo/StatusWatch/actions/runs/40531933574)
+und [Azure-Deployment](https://github.com/ahmojo/StatusWatch/actions/runs/40532169194).
+
+Azure-Zugriff erfolgt über OIDC und die GitHub-Umgebung `production`.
+Dort liegen `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
+`AZURE_RESOURCE_GROUP` und `AZURE_WEBAPP_NAME` als Variablen.
+Anwendungs-Secrets bleiben in Azure. Bestehende Umgebungsfreigaben gelten weiter.
+
+Für Rollbacks bleibt der manuelle Start mit einem älteren getesteten Tag.
+Er setzt nur das Image zurück, nicht das Datenbankschema. Ein fehlgeschlagener
+Healthcheck löst keinen automatischen Rollback aus.
+
+## Tests
+
+In der aktivierten virtuellen Umgebung:
+
+```powershell
 python -m pre_commit install
 python -m pre_commit run --all-files
 python -m pytest
 python -m ruff check .
 ```
 
-Die virtuelle Umgebung muss dabei aktiviert sein. pre-commit führt Ruff,
-pytest mit Coverage sowie Prüfungen auf Leerzeichen, Dateiende, Konfliktmarker,
-Dateinamen mit unterschiedlicher Gross-/Kleinschreibung und unerwünschte Endungen
-(`.pyc`, `.pyo`, `.exe`, `.dll`, `.bak`, `.tmp`, `.orig`, `.rej`) aus.
-Die einfachen Leerzeichen- und Dateiende-Hooks korrigieren betroffene Dateien;
-danach muss der Diff kontrolliert und die Änderung erneut gestaged werden.
-GitHub Actions verwendet denselben Aufruf `python -m pre_commit run --all-files`.
+GitHub Actions führt dieselben pre-commit-Prüfungen bei Pull Requests aus.
+pytest verlangt mindestens 85 % Zeilenabdeckung. Tests verwenden SQLite und
+ersetzen externe Dienste; sie belegen keinen vollständigen Azure-Browserablauf.
+Die Leerzeichen- und Dateiende-Hooks können Dateien korrigieren: Diff kontrollieren.
 
-`python -m pytest` zeigt die Zeilenabdeckung von `statuswatch` im Terminal und
-schlägt unter 85 % fehl. Bei 98,99 % gemessener Abdeckung lässt dieser Mindestwert
-Spielraum für kleine Änderungen.
-
-Die Ruff-Formatprüfung ist vorerst nicht aktiviert: `ruff format --check .`
-würde sechs bestehende Python-Dateien ändern. Diese Formatänderungen gehören
-nicht zu diesem Schritt.
+`/health/live` meldet Webprozess und Image-Commit, `/health/ready` prüft die
+Datenbank mit `SELECT 1` (503 bei Fehler). `/health` bleibt als einfacher Status verfügbar.
