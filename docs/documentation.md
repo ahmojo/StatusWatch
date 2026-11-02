@@ -18,9 +18,9 @@ enthält Umsetzung und Tests.
 Das ausführbare Artefakt ist ein Container unter `ghcr.io/ahmojo/statuswatch`.
 Versions-Tag, Commit-SHA und Image-Digest ordnen eine Veröffentlichung dem Code zu.
 Azure verwendet den Digest, damit genau das veröffentlichte Image läuft.
-Der [Release v0.1.3](https://github.com/ahmojo/StatusWatch/actions/runs/40531933574)
-vom 27. Oktober 2026 gehört zu Commit
-`b775b00c7cc06d8c1b7d7c2555ae9e1380c25366`.
+Der [Release v0.1.4](https://github.com/ahmojo/StatusWatch/actions/runs/41453995111)
+vom 2. November 2026 gehört zu Commit
+`a942b90c73e38e2a034a8147f760fd265576f7a7`.
 
 **Eigenleistung selbst ergänzen:** Eigene Arbeit am Beispiel-PR, Verantwortung
 und Entscheidung für den Entwicklungsablauf beschreiben.
@@ -57,8 +57,9 @@ einen Test und den damit erkannten Fehler erklären.
 
 StatusWatch läuft als Container in Azure App Service mit PostgreSQL.
 Der Container prüft die Monitore alle fünf Minuten. Der
-[Deployment-Lauf für v0.1.3](https://github.com/ahmojo/StatusWatch/actions/runs/40532169194)
-war am 27. Oktober 2026 erfolgreich.
+[Deployment-Lauf für v0.1.4](https://github.com/ahmojo/StatusWatch/actions/runs/41454140471)
+startete am 2. November 2026 nach dem erfolgreichen Release automatisch über
+`workflow_run` und war erfolgreich.
 
 Der Ablauf bei einem neuen Versions-Tag:
 
@@ -74,11 +75,10 @@ des Images. Er setzt keine Datenbankänderungen zurück.
 Am 2. November 2026 antworteten [Loginseite](https://lb-324.ahmet-ilhan.tech/),
 [/health/live](https://lb-324.ahmet-ilhan.tech/health/live) und
 [/health/ready](https://lb-324.ahmet-ilhan.tech/health/ready) mit HTTP 200.
-Der laufende Commit entsprach `v0.1.3`; die Datenbankabfrage war erfolgreich.
+Nach dem Deployment entsprach der laufende Commit `v0.1.4`;
+die Datenbankabfrage war erfolgreich.
 
-Offen bleiben der erste echte Lauf des neuen automatischen Auslösers sowie
-Azure-Nachweise für Neustart-Persistenz und Rollback. Die bisherigen erfolgreichen
-Deployments wurden manuell gestartet.
+Offen bleiben Azure-Nachweise für Neustart-Persistenz und Rollback.
 
 **Eigenleistung selbst ergänzen:** Eigene Azure-/Workflow-Arbeit und eine
 Entscheidung anhand eines tatsächlich gelösten Problems beschreiben.

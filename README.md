@@ -91,10 +91,9 @@ Der Deployment-Workflow prüft Commit, main-Zugehörigkeit und übereinstimmende
 Digests. Anschliessend prüft er den laufenden Commit und die Datenbank.
 Branch-Pushes lösen kein Deployment aus.
 
-Die Verknüpfung über `workflow_run` liegt auf `main`;
-ihr erster echter Lauf steht noch aus. Bereits erfolgreich:
-[Release v0.1.3](https://github.com/ahmojo/StatusWatch/actions/runs/40531933574)
-und [Azure-Deployment](https://github.com/ahmojo/StatusWatch/actions/runs/40532169194).
+Am 2. November 2026 lief die ganze Kette für `v0.1.4` erfolgreich:
+[Release](https://github.com/ahmojo/StatusWatch/actions/runs/41453995111)
+und [automatisches Azure-Deployment](https://github.com/ahmojo/StatusWatch/actions/runs/41454140471).
 
 Azure-Zugriff erfolgt über OIDC und die GitHub-Umgebung `production`.
 Dort liegen `AZURE_CLIENT_ID`, `AZURE_TENANT_ID`, `AZURE_SUBSCRIPTION_ID`,
