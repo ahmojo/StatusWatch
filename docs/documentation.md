@@ -4,9 +4,91 @@ Stand: 2. November 2026.
 
 ## Inhaltsverzeichnis
 
+- [A1: Anforderungsverwaltung](#a1-anforderungsverwaltung)
+- [B1: Lokale Entwicklungsumgebung](#b1-lokale-entwicklungsumgebung)
 - [C1: Sourcecode- und Artefaktverwaltung](#c1-sourcecode--und-artefaktverwaltung)
 - [D1: Automatisierter Integrationsprozess](#d1-automatisierter-integrationsprozess)
 - [E1: Automatisierter Deploymentprozess](#e1-automatisierter-deploymentprozess)
+
+## A1: Anforderungsverwaltung
+
+DevOps verbindet Entwicklung und Betrieb durch gemeinsame Abläufe und
+automatisierte Prüfungen. Bei StatusWatch führt der Weg von einer Anforderung
+über Code und Tests bis zur Auslieferung. Dadurch fallen Fehler vor einer
+Veröffentlichung auf; ein Versionsstand lässt sich gezielt wieder ausliefern.
+
+Eine Anforderung beschreibt, was die Anwendung leisten soll. Eine User Story
+formuliert Rolle, Ziel und Nutzen. Akzeptanzkriterien legen fest, woran die
+Erfüllung erkannt wird. Ein Issue hält die Aufgabe fest, der Pull Request
+verknüpft sie mit der Umsetzung. Commits dokumentieren einzelne Änderungen.
+
+Der Umfang von StatusWatch ist bewusst klein: eine Betreiberperson, höchstens
+zehn Monitore, HTTP-/HTTPS-Prüfungen alle fünf Minuten und die letzten zehn
+Ergebnisse. Anmeldung und Monitorverwaltung sind funktionale Anforderungen;
+Zugriffsschutz, Eingabeprüfung und automatisierte Tests sichern die Qualität.
+
+Beispiel: Als Betreiberperson möchte ich Websites verwalten, damit ich deren
+Erreichbarkeit prüfen kann. [Issue #7](https://github.com/ahmojo/StatusWatch/issues/7)
+nennt dafür unter anderem Anmeldung, CSRF-Schutz und das Limit von zehn Monitoren.
+Ein prüfbares Akzeptanzkriterium lautet: Sind zehn Monitore gespeichert, wird
+ein weiterer abgelehnt. [PR #8](https://github.com/ahmojo/StatusWatch/pull/8)
+enthält die Umsetzung; der Test `test_ten_monitor_limit_and_creation_after_deletion`
+prüft dieses Verhalten. Die [User-Story-Vorlage](../.github/ISSUE_TEMPLATE/user_story.md)
+nutzt das Schema «Gegeben – Wenn – Dann» für Akzeptanzkriterien.
+
+Für dieses Projekt lassen sich die Werkzeuge so vergleichen:
+
+| Werkzeug | Eignung für StatusWatch |
+|---|---|
+| GitHub Issues | Anforderungen und Pull Requests liegen beim Code. Für den kleinen Umfang reicht ein gemeinsames Repository. |
+| Trello | Karten bieten eine übersichtliche Aufgabenplanung. Für die direkte Verbindung mit dem Code wäre eine zusätzliche Integration sinnvoll. |
+| Jira | Für umfangreiche Teamabläufe geeignet; die zusätzliche Konfiguration bringt bei diesem kleinen Projekt wenig Nutzen. |
+
+**Eigenleistung:** Ich habe den Funktionsumfang festgelegt und die Anforderungen
+an die KI vorgegeben. Ich habe Änderungen reviewt, die Anwendung im Browser
+getestet und Korrekturen veranlasst. Die Arbeit bleibt über Issues und Pull
+Requests nachvollziehbar; GitHub dient als gemeinsame Ablage für Planung und Code.
+
+## B1: Lokale Entwicklungsumgebung
+
+Die Entwicklung erfolgt unter Windows mit PowerShell, Git und einer lokalen
+Python-Umgebung. `.venv` trennt die Projektabhängigkeiten von anderen Projekten.
+[requirements.txt](../requirements.txt) enthält die Laufzeitpakete;
+[requirements-dev.txt](../requirements-dev.txt) ergänzt pytest, Coverage,
+Ruff und pre-commit. Die lokale Umgebung verwendet Python 3.14, CI und
+Container verwenden Python 3.11.
+
+Für die Einrichtung werden die virtuelle Umgebung angelegt, die Abhängigkeiten
+installiert und die Commit-Hooks aktiviert:
+
+```powershell
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+python -m pip install -r requirements-dev.txt
+python -m pre_commit install
+```
+
+Die lokale `.env` enthält eigene Konfigurationswerte und bleibt durch
+`.gitignore` ausserhalb des Repositories. Die README erklärt Datenbankeinrichtung
+und Start. Für einen vollständigen lokalen Betrieb steht zusätzlich Docker
+Compose mit Webdienst und PostgreSQL bereit. Die virtuelle Umgebung eignet
+sich für schnelle Codeprüfungen; Compose bildet die Laufzeit mit Datenbank ab.
+
+Die Umgebung wurde um automatische Commit-Prüfungen erweitert:
+[Issue #15](https://github.com/ahmojo/StatusWatch/issues/15) und
+[PR #16](https://github.com/ahmojo/StatusWatch/pull/16) dokumentieren diesen Schritt.
+Die [pre-commit-Konfiguration](../.pre-commit-config.yaml) führt Ruff, pytest
+mit Coverage und Dateiprüfungen aus. GitHub Actions ruft dieselben Prüfungen
+auf. Dadurch gelten lokal und beim Pull Request dieselben Qualitätsregeln.
+
+`python -m pip check` bestätigt konsistente Abhängigkeiten.
+Die Ergebnisse der lokalen Tests stehen unter D1.
+
+**Eigenleistung:** Die technischen Einrichtungsschritte habe ich mit KI
+durchführen lassen. Ich habe die vorgeschlagenen Änderungen reviewt und
+freigegeben sowie die Anwendung im Browser geprüft. Meine Verantwortung lag
+bei den Anforderungen, der Beurteilung der Ergebnisse und der Entscheidung,
+welche Änderungen übernommen werden.
 
 ## C1: Sourcecode- und Artefaktverwaltung
 
@@ -43,7 +125,7 @@ war erfolgreich. Lokale Ergebnisse vom 2. November 2026 mit Python 3.14:
 
 | Prüfung | Ergebnis |
 |---|---|
-| `python -m pytest -p no:cacheprovider` | 157 Tests bestanden, 98,57 % Coverage |
+| `python -m pytest -p no:cacheprovider` | 158 Tests bestanden, 98,57 % Coverage |
 | `python -m ruff check . --no-cache` | bestanden |
 | `python -m pre_commit run --all-files` | bestanden |
 | actionlint 1.7.12, ohne ShellCheck/Pyflakes | vier Workflow-Dateien bestanden |

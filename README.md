@@ -5,7 +5,7 @@ prüfen, Status und Antwortzeit speichern und die zehn letzten Ergebnisse anzeig
 Die Verwaltung ist passwortgeschützt.
 
 [Live-App](https://lb-324.ahmet-ilhan.tech/) ·
-[Dokumentation C1, D1 und E1](docs/documentation.md)
+[Dokumentation A1 bis E1](docs/documentation.md)
 
 ## Lokal mit Docker starten
 
